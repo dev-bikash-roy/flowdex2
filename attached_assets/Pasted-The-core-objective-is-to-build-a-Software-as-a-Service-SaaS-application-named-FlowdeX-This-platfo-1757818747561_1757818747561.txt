@@ -1,0 +1,38 @@
+The core objective is to build a Software as a Service (SaaS) application named FlowdeX. This platform will serve as a trading journal and backtesting tool for financial traders. The functionality and user experience should closely replicate the reference platform, app.traderscasa.com, but with the unique FlowdeX branding.
+The application will be developed using the following technology stack:
+Frontend: React.js
+Backend: Node.js with Express.js
+Database: PostgreSQL
+APIs & Services: Stripe (for payments), TwelveData (for market data), and AWS S3 (for file storage).
+Key Features to Be Developed:
+Feature Area
+Key Functionalities
+Branding & UI/UX
+Implement the FlowdeX logo and a sleek, dark theme with blue/grey accents. The interface must be professional, responsive, and intuitive.
+Backtesting & Replay
+Allow users to upload historical data (CSV) or connect to data APIs (TwelveData) to replay market scenarios. This includes replay controls (play, pause, speed) and various chart types.
+Manual Trading
+Enable simulated trading directly on the chart replay, with features to track open positions, PnL, and trade history.
+Trading Journal
+Automatically log all trades. Users can add manual notes, attach screenshots, and apply strategy or psychology tags. The journal will be exportable to CSV and PDF.
+Analytics Dashboard
+Provide users with in-depth performance metrics, including an equity curve, win rate, profit factor, and heatmaps showing performance by time and day.
+User Accounts & Subscriptions
+Standard user authentication (signup, login, password reset, 2FA). A subscription model managed via Stripe will offer different tiers (e.g., Free and Pro).
+Development Plan & Milestones
+The project is broken down into four distinct phases, which provides a clear and logical roadmap for development:
+Phase 1: Core Replay & Trading
+Focus on building the heart of the application: the chart replay engine.
+Integrate with TwelveData for market data.
+Develop the manual trading interface on the chart.
+Phase 2: Journal & Analytics
+Implement the automatic trading journal.
+Build the analytics dashboard with key performance charts and statistics.
+Phase 3: Accounts & Payments
+Develop the user authentication system (signup, login, etc.).
+Integrate Stripe for handling subscriptions and payments.
+Create an admin dashboard for user management.
+Phase 4: Final Polish & Deployment
+Refine the branding and user interface.
+Deploy the application to a production environment (e.g., Vercel/AWS).
+Finalize documentation and prepare for handover.
