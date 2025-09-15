@@ -1,15 +1,20 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
 
-neonConfig.webSocketConstructor = ws;
+// Use in-memory database for development if DATABASE_URL is not set
+const isDevelopment = process.env.NODE_ENV?.trim().toLowerCase() === 'development' || 
+                     process.env.DEVELOPMENT === 'true' ||
+                     (!process.env.NODE_ENV && !process.env.REPL_ID);
 
 if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+  if (isDevelopment) {
+    console.warn("DATABASE_URL not set. Using in-memory database for development.");
+    // We'll handle this in the storage layer instead
+  } else {
+    throw new Error("DATABASE_URL environment variable is required in production");
+  }
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+export const pool = process.env.DATABASE_URL ? new Pool({ connectionString: process.env.DATABASE_URL }) : null;
+export const db = pool ? drizzle({ client: pool, schema }) : null;

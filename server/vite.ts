@@ -40,8 +40,23 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
-  app.use(vite.middlewares);
+  // Use Vite middleware, but make sure it doesn't catch API routes
+  app.use((req, res, next) => {
+    // If the request is for an API route, skip Vite middleware
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    // Otherwise, let Vite handle it
+    vite.middlewares(req, res, next);
+  });
+  
+  // Handle all non-API routes with Vite
   app.use("*", async (req, res, next) => {
+    // Skip if it's an API route
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    
     const url = req.originalUrl;
 
     try {
@@ -68,7 +83,7 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
+  const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
@@ -76,10 +91,20 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Serve static files, but skip API routes
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    express.static(distPath)(req, res, next);
+  });
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  // Fall through to index.html for non-API routes
+  app.use("*", (req, res, next) => {
+    // Skip if it's an API route
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

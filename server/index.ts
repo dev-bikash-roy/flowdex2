@@ -1,6 +1,8 @@
+import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { createServer } from "http";
 
 const app = express();
 app.use(express.json());
@@ -61,11 +63,23 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  
+  // Handle port in use error gracefully
+  let currentPort = port;
+  const tryListen = () => {
+    const httpServer = createServer(app);
+    httpServer.listen(currentPort, () => {
+      log(`serving on port ${currentPort}`);
+    }).on('error', (e: any) => {
+      if (e.code === 'EADDRINUSE') {
+        console.log(`Port ${currentPort} is already in use. Trying ${currentPort + 1}...`);
+        currentPort++;
+        tryListen();
+      } else {
+        console.error(e);
+      }
+    });
+  };
+  
+  tryListen();
 })();

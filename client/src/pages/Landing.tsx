@@ -3,12 +3,55 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartLine, Play, BarChart3, BookOpen, Shield, Zap } from "lucide-react";
 
 export default function Landing() {
-  const handleLogin = () => {
-    window.location.href = "/api/login";
+  // Always use /login for localhost development
+  const isLocalhost = window.location.hostname === 'localhost' || 
+                      window.location.hostname === '127.0.0.1' || 
+                      window.location.port === '5000';
+  
+  console.log('Frontend Environment detection:', {
+    hostname: window.location.hostname,
+    port: window.location.port,
+    isLocalhost
+  });
+
+  const handleSignUp = () => {
+    console.log('Sign up button clicked');
+    // Redirect to the sign-up page
+    window.location.href = "/signup";
+  };
+
+  const handleLearnMore = () => {
+    console.log('Learn more button clicked');
+    // Scroll to the features section
+    const featuresSection = document.getElementById("features");
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* Header */}
+      <header className="bg-card border-b border-border px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-16">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-lg">X</span>
+            </div>
+            <span className="text-xl font-bold">FlowdeX</span>
+          </div>
+          <div className="flex items-center space-x-4">
+            {/* Direct link to /login instead of JavaScript handler */}
+            <Button variant="ghost" asChild>
+              <a href="/login">Sign In</a>
+            </Button>
+            <Button onClick={handleSignUp}>
+              Sign Up
+            </Button>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-background"></div>
@@ -30,7 +73,7 @@ export default function Landing() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 size="lg" 
-                onClick={handleLogin}
+                onClick={handleSignUp}
                 className="text-lg px-8 py-4"
                 data-testid="button-get-started"
               >
@@ -39,6 +82,7 @@ export default function Landing() {
               <Button 
                 size="lg" 
                 variant="outline"
+                onClick={handleLearnMore}
                 className="text-lg px-8 py-4"
                 data-testid="button-learn-more"
               >
@@ -50,7 +94,7 @@ export default function Landing() {
       </div>
 
       {/* Features Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <div id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Everything You Need to Excel</h2>
           <p className="text-xl text-muted-foreground">
@@ -193,7 +237,7 @@ export default function Landing() {
             </p>
             <Button 
               size="lg" 
-              onClick={handleLogin}
+              onClick={handleSignUp}
               className="text-lg px-8 py-4"
               data-testid="button-start-trading"
             >
