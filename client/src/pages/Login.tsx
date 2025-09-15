@@ -17,7 +17,7 @@ export default function Login() {
 
     try {
       // Send login request to the API
-      const response = await fetch("/api/login", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         credentials: "include",
         headers: {

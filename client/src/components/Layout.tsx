@@ -1,6 +1,9 @@
 import { ReactNode } from "react";
 import Sidebar from "./Sidebar";
 import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 interface LayoutProps {
   children: ReactNode;
@@ -8,6 +11,43 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/logout", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        // Clear the user data from React Query cache
+        queryClient.setQueryData(["/api/auth/user"], null);
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        
+        toast({
+          title: "Success",
+          description: "Logged out successfully",
+        });
+        
+        // Redirect to login page
+        window.location.href = "/login";
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Error",
+          description: data.message || "Logout failed",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error", 
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="flex h-screen bg-background text-foreground">
@@ -28,15 +68,25 @@ export default function Layout({ children }: LayoutProps) {
                 <i className="fas fa-crown text-warning w-4"></i>
                 <span className="text-sm font-medium">Pro Plan</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-primary-foreground font-medium text-sm">
-                    {(user as any)?.firstName?.[0] || (user as any)?.email?.[0] || 'U'}
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                    <span className="text-primary-foreground font-medium text-sm">
+                      {(user as any)?.firstName?.[0] || (user as any)?.email?.[0] || 'U'}
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium">
+                    {(user as any)?.firstName ? `${(user as any)?.firstName} ${(user as any)?.lastName}` : (user as any)?.email}
                   </span>
                 </div>
-                <span className="text-sm font-medium">
-                  {(user as any)?.firstName ? `${(user as any)?.firstName} ${(user as any)?.lastName}` : (user as any)?.email}
-                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="text-xs"
+                >
+                  Logout
+                </Button>
               </div>
             </div>
           </div>

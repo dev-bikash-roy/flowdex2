@@ -29,7 +29,7 @@ export default function SignUp() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/signup", {
+      const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -42,8 +42,8 @@ export default function SignUp() {
           title: "Success",
           description: "Account created successfully",
         });
-        // Redirect to login page
-        window.location.href = "/login";
+        // Redirect to home page (user is auto-logged in)
+        window.location.href = "/";
       } else {
         const data = await response.json();
         toast({
