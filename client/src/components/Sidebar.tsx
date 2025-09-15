@@ -67,7 +67,8 @@ export default function Sidebar() {
             <Play className="w-4 h-4" />
             <span>Start Live Trading</span>
           </button>
-          <button 
+          <button
+            onClick={() => setLocation('/settings')}
             className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
             data-testid="button-settings"
           >

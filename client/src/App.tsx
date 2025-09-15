@@ -14,6 +14,7 @@ import Trades from "@/pages/Trades";
 import Analytics from "@/pages/Analytics";
 import Reports from "@/pages/Reports";
 import Journal from "@/pages/Journal";
+import Settings from "@/pages/Settings";
 import Layout from "@/components/Layout";
 
 function Router() {
@@ -43,6 +44,7 @@ function Router() {
           <Route path="/analytics" component={Analytics} />
           <Route path="/reports" component={Reports} />
           <Route path="/journal" component={Journal} />
+          <Route path="/settings" component={Settings} />
         </Layout>
       )}
       <Route component={NotFound} />
