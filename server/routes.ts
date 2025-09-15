@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTradingSessionSchema, insertTradeSchema, insertJournalEntrySchema } from "@shared/schema";
+import { insertTradingSessionSchema, insertTradeSchema, insertJournalEntrySchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 
 // Debug environment variables
@@ -137,6 +137,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  app.put('/api/users/me', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id || req.user.claims?.sub;
+      const updates = insertUserSchema
+        .pick({ firstName: true, lastName: true, profileImageUrl: true })
+        .partial()
+        .parse(req.body);
+      const user = await storage.upsertUser({ id: userId, ...updates });
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid user data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update user" });
+      }
     }
   });
 
