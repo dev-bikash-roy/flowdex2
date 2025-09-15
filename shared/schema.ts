@@ -143,6 +143,9 @@ export const insertTradingSessionSchema = createInsertSchema(tradingSessions).pi
   startingBalance: true,
   startDate: true,
   description: true,
+}).extend({
+  startingBalance: z.coerce.number(),
+  startDate: z.coerce.date(),
 });
 
 export const insertTradeSchema = createInsertSchema(trades).pick({
