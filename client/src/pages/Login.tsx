@@ -16,10 +16,10 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // In development mode, our local auth accepts any credentials
-      // Use /login endpoint instead of /api/login
-      const response = await fetch("/login", {
+      // Send login request to the API
+      const response = await fetch("/api/login", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
