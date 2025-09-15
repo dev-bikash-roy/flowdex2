@@ -143,7 +143,14 @@ export const insertTradingSessionSchema = createInsertSchema(tradingSessions).pi
   description: true,
 });
 
-export const insertTradeSchema = createInsertSchema(trades).pick({
+export const insertTradeSchema = createInsertSchema(trades, {
+  entryPrice: z.coerce.string(),
+  exitPrice: z.coerce.string(),
+  quantity: z.coerce.string(),
+  stopLoss: z.coerce.string(),
+  takeProfit: z.coerce.string(),
+  profitLoss: z.coerce.string(),
+}).pick({
   sessionId: true,
   pair: true,
   type: true,
