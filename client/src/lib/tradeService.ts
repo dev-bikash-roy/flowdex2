@@ -13,6 +13,28 @@ export interface TradeData {
   tags?: string[];
 }
 
+function serializeTradeData<T extends object>(data: T): Record<string, unknown> {
+  const decimalFields = [
+    'entryPrice',
+    'exitPrice',
+    'quantity',
+    'stopLoss',
+    'takeProfit',
+    'profitLoss',
+  ];
+
+  const serialized: Record<string, unknown> = { ...(data as Record<string, unknown>) };
+
+  for (const field of decimalFields) {
+    const value = serialized[field];
+    if (value !== undefined && value !== null) {
+      serialized[field] = value.toString();
+    }
+  }
+
+  return serialized;
+}
+
 export interface TradeResponse {
   id: string;
   sessionId: string;
@@ -42,7 +64,7 @@ export interface TradeResponse {
  */
 export async function executeTrade(tradeData: TradeData): Promise<TradeResponse> {
   try {
-    const response = await apiRequest('POST', '/api/trades', tradeData);
+    const response = await apiRequest('POST', '/api/trades', serializeTradeData(tradeData));
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -64,11 +86,15 @@ export async function executeTrade(tradeData: TradeData): Promise<TradeResponse>
  */
 export async function closeTrade(tradeId: string, exitPrice: number): Promise<TradeResponse> {
   try {
-    const response = await apiRequest('PUT', `/api/trades/${tradeId}`, {
-      exitPrice,
-      status: 'closed',
-      exitTime: new Date().toISOString()
-    });
+    const response = await apiRequest(
+      'PUT',
+      `/api/trades/${tradeId}`,
+      serializeTradeData({
+        exitPrice,
+        status: 'closed',
+        exitTime: new Date().toISOString(),
+      }),
+    );
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -111,7 +137,7 @@ export async function fetchTrades(sessionId: string): Promise<TradeResponse[]> {
  */
 export async function updateTrade(tradeId: string, updates: Partial<TradeData>): Promise<TradeResponse> {
   try {
-    const response = await apiRequest('PUT', `/api/trades/${tradeId}`, updates);
+    const response = await apiRequest('PUT', `/api/trades/${tradeId}`, serializeTradeData(updates));
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
