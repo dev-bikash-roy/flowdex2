@@ -3,6 +3,13 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertTradingSessionSchema, insertTradeSchema, insertJournalEntrySchema } from "@shared/schema";
 import { z } from "zod";
+import { randomBytes, scryptSync } from "crypto";
+
+const hashPassword = (password: string) => {
+  const salt = randomBytes(16).toString('hex');
+  const hash = scryptSync(password, salt, 64).toString('hex');
+  return `${salt}:${hash}`;
+};
 
 // Debug environment variables
 console.log('Environment variables:');
@@ -587,17 +594,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sign Up Endpoint
   app.post('/api/signup', async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const body = z.object({
+        email: z.string().email(),
+        password: z.string().min(6),
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
+      }).parse(req.body);
 
-      // Here you would implement the logic to create a new user
-      // For simplicity, we'll just return a success message
-      // In a real application, you would hash the password and store the user in the database
-      console.log(`User signup requested for: ${email}`);
-      
+      const passwordHash = hashPassword(body.password);
+      await storage.upsertUser({
+        email: body.email,
+        firstName: body.firstName,
+        lastName: body.lastName,
+        passwordHash,
+      });
+
       res.status(201).json({ message: "User created successfully" });
     } catch (error) {
       console.error("Error creating user:", error);
-      res.status(500).json({ message: "Failed to create user" });
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid signup data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create user" });
+      }
     }
   });
 

@@ -95,6 +95,7 @@ export class DatabaseStorage implements IStorage {
           firstName: "Dev",
           lastName: "User",
           profileImageUrl: "",
+          passwordHash: "",
           createdAt: new Date(),
           updatedAt: new Date()
         };
@@ -115,6 +116,7 @@ export class DatabaseStorage implements IStorage {
         firstName: userData.firstName !== undefined ? userData.firstName : null,
         lastName: userData.lastName !== undefined ? userData.lastName : null,
         profileImageUrl: userData.profileImageUrl !== undefined ? userData.profileImageUrl : null,
+        passwordHash: userData.passwordHash !== undefined ? userData.passwordHash : null,
         createdAt: new Date(),
         updatedAt: new Date()
       };
