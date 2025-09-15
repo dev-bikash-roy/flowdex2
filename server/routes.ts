@@ -89,16 +89,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('Trimmed NODE_ENV:', process.env.NODE_ENV?.trim());
   console.log('Lowercase NODE_ENV:', process.env.NODE_ENV?.toLowerCase());
   
-  // More robust environment detection - also check for explicit development flag
-  const isDevelopment = process.env.NODE_ENV?.trim().toLowerCase() === 'development' || 
-                       process.env.DEVELOPMENT === 'true' ||
-                       (!process.env.NODE_ENV && !process.env.REPL_ID);
-  console.log('Using development auth:', isDevelopment);
+  // Use explicit AUTH_MODE or default to local for non-production environments
+  const useLocalAuth = process.env.AUTH_MODE === 'local' || process.env.NODE_ENV !== 'production';
+  console.log('Using local auth:', useLocalAuth);
   
-  // Dynamically import auth modules based on environment
+  // Dynamically import auth modules based on auth mode
   let authModule: any;
-  if (isDevelopment) {
-    console.log('Loading localAuth for development');
+  if (useLocalAuth) {
+    console.log('Loading localAuth');
     authModule = await import("./localAuth");
   } else {
     console.log('Loading replitAuth for production');
@@ -646,7 +644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
       database: process.env.DATABASE_URL ? 'postgresql' : 'in-memory',
-      auth: isDevelopment ? 'local-mock' : 'replit'
+      auth: useLocalAuth ? 'local' : 'replit'
     });
   });
 
