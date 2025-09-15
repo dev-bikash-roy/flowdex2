@@ -80,28 +80,31 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  // Mock logout endpoint
+  // Logout endpoint - destroy session and end auth
   app.get("/api/logout", (req, res) => {
-    req.logout(() => {
-      res.json({ message: "Logged out successfully" });
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout error" });
+      }
+
+      req.session.destroy((sessionErr) => {
+        if (sessionErr) {
+          return res.status(500).json({ message: "Logout error" });
+        }
+        res.json({ message: "Logged out successfully" });
+      });
     });
   });
 }
 
 export const isAuthenticated: RequestHandler = (req, res, next) => {
-  // In development, bypass authentication
-  const isDevelopment = process.env.NODE_ENV?.trim().toLowerCase() === 'development' || 
-                       process.env.DEVELOPMENT === 'true' ||
-                       (!process.env.NODE_ENV && !process.env.REPL_ID);
-  
-  if (isDevelopment) {
-    (req as any).user = mockUser;
-    return next();
-  }
-  
   if (req.isAuthenticated()) {
     return next();
   }
-  
+
   res.status(401).json({ message: "Unauthorized" });
 };
