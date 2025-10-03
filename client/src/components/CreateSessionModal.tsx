@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/hooks/useAuth";
 import { X } from "lucide-react";
 
 interface CreateSessionModalProps {
@@ -42,45 +42,11 @@ export default function CreateSessionModal({ open, onOpenChange }: CreateSession
   });
 
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { user, isLoading } = useAuth();
 
-  const createSessionMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const response = await apiRequest("POST", "/api/trading-sessions", {
-        name: data.name,
-        startingBalance: data.startingBalance,
-        pair: data.pair,
-        startDate: new Date(data.startDate),
-        description: data.description,
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Session Created",
-        description: "Your new trading session has been created successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/trading-sessions"] });
-      onOpenChange(false);
-      setFormData({
-        name: "",
-        startingBalance: "10000",
-        pair: "",
-        startDate: new Date().toISOString().split('T')[0],
-        description: "",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to create session. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!formData.name || !formData.pair) {
       toast({
         title: "Validation Error",
@@ -89,7 +55,93 @@ export default function CreateSessionModal({ open, onOpenChange }: CreateSession
       });
       return;
     }
-    createSessionMutation.mutate(formData);
+    
+    try {
+      // Check if user is authenticated
+      if (isLoading) {
+        toast({
+          title: "Loading",
+          description: "Please wait while we verify your authentication.",
+        });
+        return;
+      }
+      
+      if (!user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to create a session.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log("Creating session for user:", user);
+      console.log("User ID:", user.id);
+      
+      // Validate user ID is a proper UUID
+      if (!user.id || typeof user.id !== 'string') {
+        toast({
+          title: "Authentication Error",
+          description: "Invalid user ID. Please log out and log back in.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Create session in Supabase with proper snake_case field names
+      const sessionData = {
+        name: formData.name,
+        starting_balance: formData.startingBalance,
+        current_balance: formData.startingBalance, // Initialize current balance to starting balance
+        pair: formData.pair,
+        start_date: new Date(formData.startDate).toISOString(),
+        description: formData.description,
+        user_id: user.id,
+        is_active: true,
+      };
+      
+      console.log("Session data to insert:", sessionData);
+      
+      const { data, error } = await supabase
+        .from('trading_sessions')
+        .insert(sessionData)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error("Supabase error:", error);
+        toast({
+          title: "Database Error",
+          description: `Failed to create session: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log("Session created successfully:", data);
+      
+      toast({
+        title: "Session Created",
+        description: "Your new trading session has been created successfully.",
+      });
+      
+      // Close modal and reset form
+      onOpenChange(false);
+      setFormData({
+        name: "",
+        startingBalance: "10000",
+        pair: "",
+        startDate: new Date().toISOString().split('T')[0],
+        description: "",
+      });
+    } catch (error: any) {
+      console.error("Error creating session:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create session. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -107,6 +159,9 @@ export default function CreateSessionModal({ open, onOpenChange }: CreateSession
               <X className="h-4 w-4" />
             </Button>
           </DialogTitle>
+          <DialogDescription>
+            Create a new backtesting session to test your trading strategies.
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -187,10 +242,10 @@ export default function CreateSessionModal({ open, onOpenChange }: CreateSession
             <Button 
               type="submit" 
               className="flex-1"
-              disabled={createSessionMutation.isPending}
+              disabled={isLoading}
               data-testid="button-create-session"
             >
-              {createSessionMutation.isPending ? "Creating..." : "Create Session"}
+              {isLoading ? "Loading..." : "Create Session"}
             </Button>
           </div>
         </form>

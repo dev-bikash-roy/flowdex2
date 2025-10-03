@@ -140,3 +140,70 @@ The implementation has been tested with:
 5. Implement file upload UI for screenshots
 6. Optimize performance and security
 7. Add comprehensive testing suite
+
+# Backtest UI Implementation Summary
+
+## Features Implemented
+
+### 1. Unique URL Structure
+- Implemented URL routing using wouter to support URLs like `/backtest/session/{id}`
+- When a user clicks "View Chart" on a session, they are taken to a unique URL for that session
+- When exiting the session, users return to the main backtest page
+
+### 2. Advanced Charting Interface
+Based on the HTML specification provided, we implemented:
+
+#### UI Components
+- Professional dark theme styling with TradersCasa-like appearance
+- Top controls bar with:
+  - Ticker display
+  - Playback controls (Play, Pause, Next Candle)
+  - Speed selector (1x, 2x, 5x, 10x)
+  - Indicator selector (None, Moving Average, RSI)
+  - Open Position button
+- Main chart container using lightweight-charts
+- Bottom bar with:
+  - Logo display
+  - Balance and P&L information
+  - Exit Session button
+- Trade execution modal with:
+  - Entry price display
+  - Take Profit and Stop Loss inputs
+  - Buy/Sell buttons
+
+#### Functionality
+- Candlestick chart rendering with lightweight-charts
+- Playback functionality with adjustable speed
+- Technical indicators (Moving Average, RSI)
+- Trade execution capabilities
+- Real-time balance and P&L tracking
+- Responsive design that adapts to window resizing
+
+### 3. Integration Points
+- Backtest.tsx now includes an "Advanced Chart" button that switches to the advanced interface
+- AdvancedBacktestChart.tsx component handles all advanced charting functionality
+- Proper session management with Supabase integration
+- Trade execution through Supabase database operations
+
+## Files Modified
+
+1. `client/src/pages/Backtest.tsx` - Main backtest page with advanced chart toggle
+2. `client/src/components/AdvancedBacktestChart.tsx` - Advanced charting component
+
+## How to Use
+
+1. Navigate to the Backtest page
+2. Create or select an existing trading session
+3. Click "Advanced Chart" to switch to the advanced interface
+4. Use playback controls to navigate through historical data
+5. Select indicators to display on the chart
+6. Click "Open Position" to execute trades
+7. Use "Exit Session" to return to the main backtest page
+
+## Technical Notes
+
+- The implementation uses lightweight-charts for high-performance charting
+- All UI components follow the dark theme styling specified
+- Playback functionality simulates real-time data progression
+- Technical indicators are calculated and displayed in real-time
+- Trade execution integrates with the existing Supabase backend

@@ -1,0 +1,21 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <rect width="32" height="32" rx="8" fill="url(#gradient)" />
+  
+  <!-- F + X Logo -->
+  <g transform="translate(4, 4)">
+    <!-- F Shape -->
+    <path d="M2 2h10v2.5H4.5v2.5h6.5v2.5H4.5v7.5H2V2z" fill="white" />
+    <!-- X Shape -->
+    <path d="M12 6l2.5-2.5h2.5L14 6.5l3 3h-2.5L12 7l-2.5 2.5H7L10 6.5 7 3.5h2.5L12 6z" fill="white" opacity="0.9" />
+  </g>
+  
+  <!-- Gradient Definition -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00D4FF;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00D4FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5B82F6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+</svg>
