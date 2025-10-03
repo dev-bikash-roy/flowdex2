@@ -3,7 +3,7 @@ import Sidebar from "./Sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabaseClient";
 
 interface LayoutProps {
   children: ReactNode;
@@ -15,16 +15,15 @@ export default function Layout({ children }: LayoutProps) {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch("/api/logout", {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        // Clear the user data from React Query cache
-        queryClient.setQueryData(["/api/auth/user"], null);
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-        
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message || "Logout failed",
+          variant: "destructive",
+        });
+      } else {
         toast({
           title: "Success",
           description: "Logged out successfully",
@@ -32,13 +31,6 @@ export default function Layout({ children }: LayoutProps) {
         
         // Redirect to login page
         window.location.href = "/login";
-      } else {
-        const data = await response.json();
-        toast({
-          title: "Error",
-          description: data.message || "Logout failed",
-          variant: "destructive",
-        });
       }
     } catch (error) {
       toast({

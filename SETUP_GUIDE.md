@@ -10,6 +10,12 @@ This guide will help you connect your FlowdeX application with all required serv
 
 ## 1. Database Setup
 
+### Option C: Supabase Database (Recommended for FlowdeX)
+
+For FlowdeX, we recommend using Supabase as your database provider. Please refer to [SUPABASE_AUTH_SETUP.md](SUPABASE_AUTH_SETUP.md) for detailed instructions on setting up Supabase authentication and database configuration.
+
+
+
 ### Option A: Local PostgreSQL Installation
 
 1. Download and install PostgreSQL from [postgresql.org](https://www.postgresql.org/download/)

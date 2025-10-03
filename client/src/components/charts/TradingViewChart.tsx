@@ -29,6 +29,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
   const chartRef = useRef<any>(null);
   const seriesRef = useRef<any>(null);
   const [isBuyMode, setIsBuyMode] = useState(true);
+  const currentTimeIndexRef = useRef<number>(0);
 
   useEffect(() => {
     if (!chartContainerRef.current || data.length === 0) return;
@@ -66,7 +67,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
     chartRef.current = chart;
 
     // Create candlestick series
-    const candlestickSeries: any = (chart as any).addCandlestickSeries({
+    const candlestickSeries = (chart as any).addCandlestickSeries({
       upColor: '#26a69a',
       downColor: '#ef5350',
       borderVisible: false,
@@ -117,6 +118,25 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
     };
   }, [data, width, height, onTrade]);
 
+  // Update chart when data changes (for playback)
+  useEffect(() => {
+    if (seriesRef.current && data.length > 0) {
+      // Format data for lightweight-charts
+      const formattedData = data.map(d => ({
+        time: d.time,
+        open: d.open,
+        high: d.high,
+        low: d.low,
+        close: d.close,
+      }));
+
+      seriesRef.current.setData(formattedData);
+      
+      // Update the current time index reference
+      currentTimeIndexRef.current = data.length - 1;
+    }
+  }, [data]);
+
   const handleTrade = () => {
     if (!seriesRef.current || !chartRef.current) return;
     
@@ -163,6 +183,16 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
           Trade at Market
         </button>
       </div>
+      
+      {/* Current time indicator */}
+      {data.length > 0 && (
+        <div className="absolute bottom-4 left-4 bg-black/70 text-white px-2 py-1 rounded text-xs">
+          {new Date(data[data.length - 1].time).toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })}
+        </div>
+      )}
     </div>
   );
 };
