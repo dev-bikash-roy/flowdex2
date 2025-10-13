@@ -30,11 +30,25 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      input: path.resolve(import.meta.dirname, "client/index.html")
+    },
+    assetsDir: 'assets',
+    copyPublicDir: true
   },
+  publicDir: path.resolve(import.meta.dirname, "client/public"),
   server: {
     fs: {
       strict: true,
       deny: ["**/.*"],
     },
+    // Add proxy for API requests to backend server
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5014',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
 });

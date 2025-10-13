@@ -1,6 +1,8 @@
 import { useLocation } from "wouter";
-import { ChartLine, Play, BarChart3, TrendingUp, BookOpen, FileText, Settings, LogOut } from "lucide-react";
+import { ChartLine, Play, BarChart3, TrendingUp, BookOpen, NotebookPen, FileText, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from '@/lib/supabaseClient';
+import { useToast } from "@/hooks/use-toast";
 
 const navigationItems = [
   { href: "/", icon: ChartLine, label: "Dashboard" },
@@ -8,14 +10,52 @@ const navigationItems = [
   { href: "/trades", icon: TrendingUp, label: "Trades" },
   { href: "/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/journal", icon: BookOpen, label: "Journal" },
+  { href: "/notebook", icon: NotebookPen, label: "Notebook" },
   { href: "/reports", icon: FileText, label: "Reports" },
 ];
 
 export default function Sidebar() {
   const [location, setLocation] = useLocation();
+  const { toast } = useToast();
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      // Call the backend logout endpoint
+      const response = await fetch("/api/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Also sign out from Supabase client to update frontend state
+        await supabase.auth.signOut();
+        
+        toast({
+          title: "Success",
+          description: "Logged out successfully",
+        });
+        
+        // Redirect to login page
+        window.location.href = "/login";
+      } else {
+        toast({
+          title: "Error",
+          description: data.message || "Logout failed",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -23,8 +63,13 @@ export default function Sidebar() {
       {/* Logo Section */}
       <div className="p-6 border-b border-border">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">X</span>
+          <div className="w-8 h-8 flex items-center justify-center">
+            <img 
+              src="/logo/flowdex-logo.png"
+              alt="FlowdeX"
+              className="w-8 h-8 object-contain"
+              style={{ filter: 'brightness(0) invert(1)' }}
+            />
           </div>
           <span className="text-xl font-semibold">FlowdeX</span>
         </div>

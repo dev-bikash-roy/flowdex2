@@ -1,4 +1,4 @@
-import { apiRequest } from './queryClient';
+import { supabase } from './supabaseClient';
 
 export interface TradeData {
   sessionId: string;
@@ -35,6 +35,29 @@ function serializeTradeData<T extends object>(data: T): Record<string, unknown> 
   return serialized;
 }
 
+// Convert string values back to numbers for frontend
+function deserializeTradeData(data: any): any {
+  const decimalFields = [
+    'entryPrice',
+    'exitPrice',
+    'quantity',
+    'stopLoss',
+    'takeProfit',
+    'profitLoss',
+  ];
+
+  const deserialized: any = { ...data };
+
+  for (const field of decimalFields) {
+    const value = deserialized[field];
+    if (value !== undefined && value !== null) {
+      deserialized[field] = parseFloat(value);
+    }
+  }
+
+  return deserialized;
+}
+
 export interface TradeResponse {
   id: string;
   sessionId: string;
@@ -62,16 +85,42 @@ export interface TradeResponse {
  * @param tradeData Trade execution data
  * @returns Promise with created trade
  */
-export async function executeTrade(tradeData: TradeData): Promise<TradeResponse> {
+export async function executeTrade(tradeData: TradeData): Promise<any> {
   try {
-    const response = await apiRequest('POST', '/api/trades', serializeTradeData(tradeData));
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
     }
-    
-    const data = await response.json();
-    return data;
+
+    // Prepare trade data
+    const tradeRecord = {
+      session_id: tradeData.sessionId,
+      user_id: user.id,
+      pair: tradeData.pair,
+      type: tradeData.type,
+      execution_type: tradeData.executionType,
+      entry_price: tradeData.entryPrice.toString(),
+      quantity: tradeData.quantity.toString(),
+      stop_loss: tradeData.stopLoss?.toString(),
+      take_profit: tradeData.takeProfit?.toString(),
+      status: 'open',
+      entry_time: new Date().toISOString(),
+      notes: tradeData.notes,
+      tags: tradeData.tags,
+    };
+
+    const { data, error } = await supabase
+      .from('trades')
+      .insert(tradeRecord)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Supabase error: ${error.message}`);
+    }
+
+    return deserializeTradeData(data);
   } catch (error) {
     console.error('Error executing trade:', error);
     throw new Error(`Failed to execute trade: ${error}`);
@@ -84,24 +133,26 @@ export async function executeTrade(tradeData: TradeData): Promise<TradeResponse>
  * @param exitPrice Price at which to close the trade
  * @returns Promise with updated trade
  */
-export async function closeTrade(tradeId: string, exitPrice: number): Promise<TradeResponse> {
+export async function closeTrade(tradeId: string, exitPrice: number): Promise<any> {
   try {
-    const response = await apiRequest(
-      'PUT',
-      `/api/trades/${tradeId}`,
-      serializeTradeData({
-        exitPrice,
-        status: 'closed',
-        exitTime: new Date().toISOString(),
-      }),
-    );
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    const updates = {
+      exit_price: exitPrice.toString(),
+      status: 'closed',
+      exit_time: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('trades')
+      .update(updates)
+      .eq('id', tradeId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Supabase error: ${error.message}`);
     }
-    
-    const data = await response.json();
-    return data;
+
+    return deserializeTradeData(data);
   } catch (error) {
     console.error('Error closing trade:', error);
     throw new Error(`Failed to close trade: ${error}`);
@@ -113,16 +164,19 @@ export async function closeTrade(tradeId: string, exitPrice: number): Promise<Tr
  * @param sessionId Session ID to fetch trades for
  * @returns Promise with array of trades
  */
-export async function fetchTrades(sessionId: string): Promise<TradeResponse[]> {
+export async function fetchTrades(sessionId: string): Promise<any[]> {
   try {
-    const response = await apiRequest('GET', `/api/trades?sessionId=${sessionId}`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    const { data, error } = await supabase
+      .from('trades')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('entry_time', { ascending: false });
+
+    if (error) {
+      throw new Error(`Supabase error: ${error.message}`);
     }
-    
-    const data = await response.json();
-    return data;
+
+    return data.map(deserializeTradeData);
   } catch (error) {
     console.error('Error fetching trades:', error);
     throw new Error(`Failed to fetch trades: ${error}`);
@@ -135,16 +189,28 @@ export async function fetchTrades(sessionId: string): Promise<TradeResponse[]> {
  * @param updates Partial trade data to update
  * @returns Promise with updated trade
  */
-export async function updateTrade(tradeId: string, updates: Partial<TradeData>): Promise<TradeResponse> {
+export async function updateTrade(tradeId: string, updates: Partial<TradeData>): Promise<any> {
   try {
-    const response = await apiRequest('PUT', `/api/trades/${tradeId}`, serializeTradeData(updates));
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Convert updates to proper format
+    const dbUpdates: any = {};
+    if (updates.stopLoss !== undefined) dbUpdates.stop_loss = updates.stopLoss.toString();
+    if (updates.takeProfit !== undefined) dbUpdates.take_profit = updates.takeProfit.toString();
+    if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+    if (updates.tags !== undefined) dbUpdates.tags = updates.tags;
+    if (updates.executionType !== undefined) dbUpdates.execution_type = updates.executionType;
+
+    const { data, error } = await supabase
+      .from('trades')
+      .update(dbUpdates)
+      .eq('id', tradeId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Supabase error: ${error.message}`);
     }
-    
-    const data = await response.json();
-    return data;
+
+    return deserializeTradeData(data);
   } catch (error) {
     console.error('Error updating trade:', error);
     throw new Error(`Failed to update trade: ${error}`);
@@ -158,14 +224,16 @@ export async function updateTrade(tradeId: string, updates: Partial<TradeData>):
  */
 export async function deleteTrade(tradeId: string): Promise<{ message: string }> {
   try {
-    const response = await apiRequest('DELETE', `/api/trades/${tradeId}`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    const { error } = await supabase
+      .from('trades')
+      .delete()
+      .eq('id', tradeId);
+
+    if (error) {
+      throw new Error(`Supabase error: ${error.message}`);
     }
-    
-    const data = await response.json();
-    return data;
+
+    return { message: 'Trade deleted successfully' };
   } catch (error) {
     console.error('Error deleting trade:', error);
     throw new Error(`Failed to delete trade: ${error}`);

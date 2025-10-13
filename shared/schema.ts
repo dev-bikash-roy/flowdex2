@@ -90,11 +90,36 @@ export const journalEntries = pgTable("journal_entries", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Notebook folders
+export const notebookFolders = pgTable("notebook_folders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: varchar("name").notNull(),
+  color: varchar("color").notNull().default('#3b82f6'),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Notebook notes
+export const notebookNotes = pgTable("notebook_notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  folderId: varchar("folder_id").references(() => notebookFolders.id, { onDelete: 'set null' }),
+  title: varchar("title").notNull(),
+  content: text("content").notNull(),
+  tags: text("tags").array(),
+  isPinned: boolean("is_pinned").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   tradingSessions: many(tradingSessions),
   trades: many(trades),
   journalEntries: many(journalEntries),
+  notebookFolders: many(notebookFolders),
+  notebookNotes: many(notebookNotes),
 }));
 
 export const tradingSessionsRelations = relations(tradingSessions, ({ one, many }) => ({
@@ -128,6 +153,25 @@ export const journalEntriesRelations = relations(journalEntries, ({ one }) => ({
   }),
 }));
 
+export const notebookFoldersRelations = relations(notebookFolders, ({ one, many }) => ({
+  user: one(users, {
+    fields: [notebookFolders.userId],
+    references: [users.id],
+  }),
+  notes: many(notebookNotes),
+}));
+
+export const notebookNotesRelations = relations(notebookNotes, ({ one }) => ({
+  user: one(users, {
+    fields: [notebookNotes.userId],
+    references: [users.id],
+  }),
+  folder: one(notebookFolders, {
+    fields: [notebookNotes.folderId],
+    references: [notebookFolders.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
@@ -141,10 +185,12 @@ export const insertTradingSessionSchema = createInsertSchema(tradingSessions).pi
   name: true,
   pair: true,
   startingBalance: true,
+  currentBalance: true,
   startDate: true,
   description: true,
 }).extend({
   startingBalance: z.coerce.number(),
+  currentBalance: z.coerce.number(),
   startDate: z.coerce.date(),
 });
 
@@ -182,8 +228,28 @@ export const insertJournalEntrySchema = createInsertSchema(journalEntries).pick(
   screenshots: true,
 });
 
+export const insertNotebookFolderSchema = createInsertSchema(notebookFolders).pick({
+  name: true,
+  color: true,
+});
+
+export const insertNotebookNoteSchema = createInsertSchema(notebookNotes).pick({
+  folderId: true,
+  title: true,
+  content: true,
+  tags: true,
+  isPinned: true,
+});
+
 // Types
-export type UpsertUser = typeof users.$inferInsert;
+export type UpsertUser = {
+  email: string;
+  firstName: string;
+  lastName: string;
+  passwordHash?: string;
+  profileImageUrl?: string;
+};
+
 export type User = typeof users.$inferSelect;
 export type InsertTradingSession = z.infer<typeof insertTradingSessionSchema>;
 export type TradingSession = typeof tradingSessions.$inferSelect;
@@ -191,3 +257,7 @@ export type InsertTrade = z.infer<typeof insertTradeSchema>;
 export type Trade = typeof trades.$inferSelect;
 export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
 export type JournalEntry = typeof journalEntries.$inferSelect;
+export type InsertNotebookFolder = z.infer<typeof insertNotebookFolderSchema>;
+export type NotebookFolder = typeof notebookFolders.$inferSelect;
+export type InsertNotebookNote = z.infer<typeof insertNotebookNoteSchema>;
+export type NotebookNote = typeof notebookNotes.$inferSelect;

@@ -92,28 +92,39 @@ export async function setupAuth(app: Express) {
   // Signup endpoint
   app.post("/api/auth/signup", async (req, res) => {
     try {
+      console.log('Signup request body:', req.body);
+      
       const { email, password, firstName, lastName } = signupSchema.parse(req.body);
+      console.log('Parsed signup data:', { email, firstName, lastName });
       
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
+        console.log('User already exists:', email);
         return res.status(409).json({ message: "User already exists" });
       }
       
       // Create new user
+      console.log('Hashing password...');
       const hashedPassword = hashPassword(password);
+      console.log('Password hashed successfully');
+      
+      console.log('Creating user in database...');
       const newUser = await storage.upsertUser({
         email,
-        firstName,
-        lastName,
-        passwordHash: hashedPassword
+        firstName,  // Use camelCase to match UpsertUser type
+        lastName,    // Use camelCase to match UpsertUser type
+        passwordHash: hashedPassword  // Use camelCase to match UpsertUser type
       });
+      console.log('User created successfully:', newUser.id);
       
       // Auto-login the new user
       req.logIn(newUser, (err) => {
         if (err) {
+          console.error('Login after signup failed:', err);
           return res.status(500).json({ message: "Signup successful but login failed" });
         }
+        console.log('User logged in successfully after signup');
         return res.status(201).json({
           message: "Account created successfully",
           user: {
@@ -125,10 +136,16 @@ export async function setupAuth(app: Express) {
         });
       });
     } catch (error: any) {
-      if (error.errors) {
+      console.error('Signup error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        code: error.code
+      });
+      
+      if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors[0].message });
       }
-      console.error('Signup error:', error);
       return res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -178,6 +195,20 @@ export async function setupAuth(app: Express) {
         res.json({ message: "Logged out successfully" });
       });
     });
+  });
+  
+  // Get current user endpoint
+  app.get("/api/auth/user", (req, res) => {
+    if (req.isAuthenticated()) {
+      const user = req.user as any;
+      return res.json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName
+      });
+    }
+    return res.status(401).json({ message: "Unauthorized" });
   });
 }
 

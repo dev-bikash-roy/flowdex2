@@ -1,10 +1,30 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
+import cors from 'cors'; // Add CORS import
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { createServer } from "http";
 
+// Fix NODE_ENV trailing space issue
+const NODE_ENV = process.env.NODE_ENV?.trim() || 'production';
+process.env.NODE_ENV = NODE_ENV;
+
+// Debug environment variables
+console.log('Environment variables:');
+console.log('NODE_ENV:', NODE_ENV);
+console.log('NODE_ENV type:', typeof NODE_ENV);
+console.log('NODE_ENV length:', NODE_ENV.length);
+
 const app = express();
+
+// Add CORS configuration
+app.use(cors({
+  origin: NODE_ENV === 'development' 
+    ? ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'] 
+    : true, // In production, allow all origins or specify your production domain
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -52,9 +72,18 @@ app.use((req, res, next) => {
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
+  const isDevelopment = NODE_ENV === "development";
+  console.log('Environment check:', {
+    NODE_ENV: NODE_ENV,
+    isDevelopment,
+    'app.get("env")': app.get("env")
+  });
+  
+  if (isDevelopment) {
+    console.log('🚀 Setting up Vite development server...');
     await setupVite(app, server);
   } else {
+    console.log('📦 Serving static files from dist...');
     serveStatic(app);
   }
 
