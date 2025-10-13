@@ -1,6 +1,15 @@
 {
   "version": 2,
   "framework": null,
+  "builds": [
+    {
+      "src": "server/index.ts",
+      "use": "@vercel/node",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
+    }
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
@@ -11,11 +20,6 @@
       "dest": "/server/index.ts"
     }
   ],
-  "functions": {
-    "server/index.ts": {
-      "maxDuration": 30
-    }
-  },
   "installCommand": "npm install",
   "buildCommand": "npm run build"
 }
