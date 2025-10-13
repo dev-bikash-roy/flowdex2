@@ -3,7 +3,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { fetchChartData } from "@/lib/chartService";
-import { marketDataService } from "@/services/marketDataService";
 import { executeTrade, fetchTrades } from "@/lib/tradeService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -102,34 +101,34 @@ export default function Backtest() {
   }, [isAuthenticated, isLoading, toast]);
 
   // Load sessions from Supabase
-  const loadSessions = async () => {
-    if (!isAuthenticated) return;
-
-    setSessionsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('trading_sessions')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setSessions(data || []);
-    } catch (error) {
-      console.error("Error loading sessions:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load sessions. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setSessionsLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const loadSessions = async () => {
+      if (!isAuthenticated) return;
+
+      setSessionsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('trading_sessions')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        setSessions(data || []);
+      } catch (error) {
+        console.error("Error loading sessions:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load sessions. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setSessionsLoading(false);
+      }
+    };
+
     loadSessions();
   }, [isAuthenticated, toast]);
 
@@ -221,17 +220,6 @@ export default function Backtest() {
 
     setIsLoadingChart(true);
     try {
-      // Try to use the new Twelve Data service first
-      try {
-        const data = await marketDataService.getChartData(symbol, interval, 1000);
-        console.log(`Loaded ${data.length} candles from Twelve Data for ${symbol}`);
-        setChartData(data);
-        return;
-      } catch (twelveDataError) {
-        console.log("Twelve Data failed, falling back to legacy service:", twelveDataError);
-      }
-
-      // Fallback to legacy chart service
       const data = await fetchChartData(symbol, interval, 100);
       setChartData(data.data);
     } catch (error) {
@@ -269,10 +257,14 @@ export default function Backtest() {
     window.history.pushState({}, '', `/backtest/session/${session.id}`);
   };
 
-  // New function to handle play button click - open fullscreen chart directly
+  // New function to handle play button click - directly show advanced chart
   const handlePlaySession = (session: any) => {
-    // Open fullscreen chart in new window
-    window.open(`/fullscreen-chart/${session.id}`, '_blank');
+    setSelectedSession(session);
+    setUseAdvancedChart(true);
+    loadChartData(session.pair, timeframe);
+    loadSessionTrades(session.id);
+    // Update URL to include session ID
+    window.history.pushState({}, '', `/backtest/session/${session.id}`);
   };
 
   const handleExitSession = () => {
@@ -357,15 +349,15 @@ export default function Backtest() {
   }
 
   return (
-    <div className="p-4 sm:p-6" data-testid="page-backtest">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold">Backtest</h1>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base">Test your trading strategies with historical data</p>
+    <div className="p-6" data-testid="page-backtest">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">Backtest</h1>
+          <p className="text-muted-foreground mt-2">Test your trading strategies with historical data</p>
         </div>
         <Button
           onClick={() => setCreateModalOpen(true)}
-          className="flex items-center justify-center space-x-2 w-full sm:w-auto"
+          className="flex items-center space-x-2"
           data-testid="button-new-session"
         >
           <Plus className="w-4 h-4" />
@@ -594,7 +586,7 @@ export default function Backtest() {
               </div>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {(sessions as TradingSession[]).map((session: TradingSession, index: number) => {
                 // Debug logging to see what data we're getting
                 console.log('Session data:', session);
@@ -610,11 +602,11 @@ export default function Backtest() {
                   <Card key={session.id} className="relative border-0 shadow-soft hover:shadow-medium transition-all duration-300">
                     <CardHeader>
                       <div className="flex items-start justify-between">
-                        <div className="min-w-0 flex-1">
-                          <CardTitle className="text-base sm:text-lg truncate" data-testid={`text-session-name-${index}`}>
+                        <div>
+                          <CardTitle className="text-lg" data-testid={`text-session-name-${index}`}>
                             {session.name}
                           </CardTitle>
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-2 text-sm text-muted-foreground space-y-1 sm:space-y-0">
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
                             <span data-testid={`text-session-pair-${index}`}>
                               Pair: {session.pair}
                             </span>
@@ -632,9 +624,9 @@ export default function Backtest() {
                             }) : 'Invalid Date'}
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2 ml-2">
+                        <div className="flex items-center space-x-2">
                           <div className={`w-3 h-3 rounded-full ${session.isActive ? 'bg-success' : 'bg-muted'}`}></div>
-                          <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">
+                          <span className="text-sm text-muted-foreground">
                             {session.isActive ? 'Active' : 'Paused'}
                           </span>
                         </div>
@@ -662,7 +654,7 @@ export default function Backtest() {
                           </span>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 pt-3 border-t border-border">
+                        <div className="flex items-center space-x-2 pt-3 border-t border-border">
                           <Button
                             size="sm"
                             className="flex-1"
@@ -673,38 +665,30 @@ export default function Backtest() {
                             View Chart
                           </Button>
 
-                          <div className="flex space-x-2 sm:flex-none">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 sm:flex-none"
-                              data-testid={`button-pause-session-${index}`}
-                            >
-                              <Pause className="w-4 h-4" />
-                              <span className="ml-1 sm:hidden">Pause</span>
-                            </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            data-testid={`button-pause-session-${index}`}
+                          >
+                            <Pause className="w-4 h-4" />
+                          </Button>
 
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 sm:flex-none"
-                              data-testid={`button-reset-session-${index}`}
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                              <span className="ml-1 sm:hidden">Reset</span>
-                            </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            data-testid={`button-reset-session-${index}`}
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </Button>
 
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="flex-1 sm:flex-none"
-                              onClick={() => handleDeleteSession(session.id)}
-                              data-testid={`button-delete-session-${index}`}
-                            >
-                              <span className="sm:hidden">Delete</span>
-                              <span className="hidden sm:inline">Delete</span>
-                            </Button>
-                          </div>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteSession(session.id)}
+                            data-testid={`button-delete-session-${index}`}
+                          >
+                            Delete
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
@@ -719,7 +703,6 @@ export default function Backtest() {
       <CreateSessionModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onSessionCreated={loadSessions}
       />
     </div>
   );

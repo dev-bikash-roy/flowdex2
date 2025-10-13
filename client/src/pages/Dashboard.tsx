@@ -8,7 +8,6 @@ import { ChartLine, Percent, TrendingUp, ArrowRight, Activity, Target, Wifi, Wif
 import { supabase } from "@/lib/supabaseClient";
 import { getUserPerformance } from "@/lib/supabaseService";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { MarketDataTest } from "@/components/MarketDataTest";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -628,11 +627,6 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Market Data Integration Test */}
-          <div className="mb-8">
-            <MarketDataTest />
-          </div>
 
           {/* Recent Activity & Calendar - REMOVED BORDERS */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

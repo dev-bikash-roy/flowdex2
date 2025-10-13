@@ -112,9 +112,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { setupAuth, isAuthenticated } = authModule;
   await setupAuth(app);
 
-  // Import market data routes
-  const marketDataRoutes = await import("./routes/marketData.js");
-  console.log("TwelveData service enabled - loading market data routes");
+  // Completely disable TwelveData service since we're not using it
+  const twelveDataService: any = null;
+  console.log("TwelveData service disabled - not loading twelveDataService module");
 
   // Dynamically import stripe service
   let stripeService: any;
@@ -463,31 +463,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Market Data Routes (Twelve Data Integration) - No auth required for market data
-  app.use('/api/market-data', marketDataRoutes.default);
-
-  // Test endpoint for Twelve Data - No auth required for testing
-  app.get('/api/test-twelve-data', async (req: any, res) => {
-    try {
-      const { twelveDataService } = await import('./services/twelveDataService.js');
-      const testData = await twelveDataService.getTimeSeries('EURUSD', '1h', 10);
-      res.json({
-        success: true,
-        message: 'Twelve Data is working!',
-        sampleData: testData,
-        supportedInstruments: twelveDataService.getSupportedInstruments()
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        error: error.message,
-        message: 'Twelve Data integration failed'
-      });
-    }
-  });
-
-  // Chart Data Endpoint (Updated to use Twelve Data) - Temporarily remove auth for testing
-  app.get('/api/chart-data', async (req: any, res) => {
+  // Chart Data Endpoint
+  app.get('/api/chart-data', isAuthenticated, async (req: any, res) => {
     try {
       const { symbol, interval, limit } = req.query;
       
@@ -499,54 +476,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const limitNum = limit ? parseInt(limit as string) : 100;
       
-      // Use Twelve Data service if available
-      if (process.env.TWELVEDATA_API_KEY) {
-        try {
-          console.log(`Fetching data from Twelve Data for ${symbol} with interval ${interval}`);
-          
-          // Import the service dynamically
-          const { twelveDataService } = await import('./services/twelveDataService.js');
-          const timeSeriesData = await twelveDataService.getTimeSeries(symbol as string, interval as string, limitNum);
-          
-          if (timeSeriesData && timeSeriesData.values && Array.isArray(timeSeriesData.values)) {
-            const formattedData = twelveDataService.formatCandlesForChart(timeSeriesData);
-            console.log(`Successfully fetched ${formattedData.length} candles from Twelve Data`);
-            
-            // Return in the format expected by the frontend
-            return res.json({
-              data: formattedData.map(candle => ({
-                time: new Date(candle.time * 1000).toISOString(),
-                open: candle.open,
-                high: candle.high,
-                low: candle.low,
-                close: candle.close,
-                volume: candle.volume
-              })),
-              symbol: symbol,
-              interval: interval,
-              source: 'twelvedata'
-            });
-          } else {
-            console.log("Invalid data structure from Twelve Data, falling back to mock data");
-          }
-        } catch (error) {
-          console.error("Error fetching from Twelve Data:", error);
-          console.log("Falling back to mock data");
-          
-          // Log more details about the error
-          if (error instanceof Error) {
-            console.error("Twelve Data error details:", error.message);
-          }
-        }
-      }
-      
-      // Fallback to mock data
-      console.log("Using mock data for chart");
+      // Always use mock data since we're not using TwelveData
+      console.log("Using mock data for chart - TwelveData integration disabled");
       const mockData = generateMockChartData(symbol as string, interval as string, limitNum);
-      return res.json({
-        ...mockData,
-        source: 'mock'
-      });
+      return res.json(mockData);
       
       /*
       // Use mock data if TWELVEDATA_API_KEY is not set or service is not available
