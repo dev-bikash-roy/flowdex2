@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { apiRequest } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,9 +25,10 @@ export default function Journal() {
     emotions: [] as string[],
     lessons: [] as string[],
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -45,126 +45,52 @@ export default function Journal() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
+  // Fetch trades from Supabase
   const { data: trades = [] } = useQuery({
-    queryKey: ["/api/trades"],
-    retry: false,
+    queryKey: ["supabase", "trades"],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      const { data, error } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('entry_time', { ascending: false });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return data;
+    },
+    enabled: !!user,
   });
 
+  // Fetch journal entries from Supabase
   const { data: journalEntries = [], isLoading: entriesLoading } = useQuery({
-    queryKey: ["/api/journal-entries", selectedTrade !== "all" ? selectedTrade : undefined],
-    retry: false,
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 500);
-        return;
+    queryKey: ["supabase", "journal-entries", selectedTrade !== "all" ? selectedTrade : undefined],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      let query = supabase
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (selectedTrade !== "all") {
+        query = query.eq('trade_id', selectedTrade);
       }
-    },
-  });
-
-  const createEntryMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const response = await apiRequest("POST", "/api/journal-entries", data);
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Journal Entry Created",
-        description: "Your journal entry has been saved successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] });
-      setCreateModalOpen(false);
-      resetForm();
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 500);
-        return;
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        throw new Error(error.message);
       }
-      toast({
-        title: "Error",
-        description: "Failed to create journal entry. Please try again.",
-        variant: "destructive",
-      });
+      
+      return data;
     },
-  });
-
-  const updateEntryMutation = useMutation({
-    mutationFn: async (data: { id: string; updates: Partial<typeof formData> }) => {
-      const response = await apiRequest("PUT", `/api/journal-entries/${data.id}`, data.updates);
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Journal Entry Updated",
-        description: "Your journal entry has been updated successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] });
-      setEditingEntry(null);
-      resetForm();
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to update journal entry. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteEntryMutation = useMutation({
-    mutationFn: async (entryId: string) => {
-      await apiRequest("DELETE", `/api/journal-entries/${entryId}`);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Journal Entry Deleted",
-        description: "The journal entry has been deleted successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to delete journal entry. Please try again.",
-        variant: "destructive",
-      });
-    },
+    enabled: !!user,
   });
 
   const resetForm = () => {
@@ -177,7 +103,7 @@ export default function Journal() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.content) {
       toast({
@@ -188,29 +114,115 @@ export default function Journal() {
       return;
     }
 
-    if (editingEntry) {
-      updateEntryMutation.mutate({ id: editingEntry.id, updates: formData });
-    } else {
-      createEntryMutation.mutate(formData);
+    setIsSubmitting(true);
+    try {
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      if (editingEntry) {
+        // Update existing entry
+        const { data, error } = await supabase
+          .from('journal_entries')
+          .update({
+            title: formData.title,
+            content: formData.content,
+            emotions: formData.emotions,
+            lessons: formData.lessons,
+          })
+          .eq('id', editingEntry.id)
+          .select()
+          .single();
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        toast({
+          title: "Journal Entry Updated",
+          description: "Your journal entry has been updated successfully.",
+        });
+      } else {
+        // Create new entry
+        const { data, error } = await supabase
+          .from('journal_entries')
+          .insert({
+            trade_id: formData.tradeId || null,
+            user_id: user.id,
+            title: formData.title,
+            content: formData.content,
+            emotions: formData.emotions,
+            lessons: formData.lessons,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        toast({
+          title: "Journal Entry Created",
+          description: "Your journal entry has been saved successfully.",
+        });
+      }
+
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ["supabase", "journal-entries"] });
+      
+      // Close modal and reset form
+      setEditingEntry(null);
+      setCreateModalOpen(false);
+      resetForm();
+    } catch (error: any) {
+      console.error("Error saving journal entry:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save journal entry. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (entryId: string) => {
+    try {
+      const { error } = await supabase
+        .from('journal_entries')
+        .delete()
+        .eq('id', entryId);
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      toast({
+        title: "Journal Entry Deleted",
+        description: "The journal entry has been deleted successfully.",
+      });
+      
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ["supabase", "journal-entries"] });
+    } catch (error: any) {
+      console.error("Error deleting journal entry:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete journal entry. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleEdit = (entry: any) => {
     setEditingEntry(entry);
     setFormData({
-      tradeId: entry.tradeId,
+      tradeId: entry.trade_id || "",
       title: entry.title,
       content: entry.content,
       emotions: entry.emotions || [],
       lessons: entry.lessons || [],
     });
-    setCreateModalOpen(true);
-  };
-
-  const handleDelete = (entryId: string) => {
-    if (confirm("Are you sure you want to delete this journal entry? This action cannot be undone.")) {
-      deleteEntryMutation.mutate(entryId);
-    }
   };
 
   const filteredEntries = journalEntries.filter((entry: any) =>
@@ -269,7 +281,7 @@ export default function Journal() {
             <SelectItem value="all">All Trades</SelectItem>
             {trades.map((trade: any) => (
               <SelectItem key={trade.id} value={trade.id}>
-                {trade.pair} - {new Date(trade.entryTime).toLocaleDateString()}
+                {trade.pair} - {new Date(trade.entry_time).toLocaleDateString()}
               </SelectItem>
             ))}
           </SelectContent>
@@ -298,7 +310,7 @@ export default function Journal() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredEntries.map((entry: any, index: number) => {
-            const associatedTrade = trades.find((trade: any) => trade.id === entry.tradeId);
+            const associatedTrade = trades.find((trade: any) => trade.id === entry.trade_id);
             
             return (
               <Card key={entry.id} className="relative">
@@ -314,7 +326,7 @@ export default function Journal() {
                             {associatedTrade.pair}
                           </Badge>
                           <span data-testid={`text-trade-date-${index}`}>
-                            {new Date(associatedTrade.entryTime).toLocaleDateString()}
+                            {new Date(associatedTrade.entry_time).toLocaleDateString()}
                           </span>
                         </div>
                       )}
@@ -332,7 +344,6 @@ export default function Journal() {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleDelete(entry.id)}
-                        disabled={deleteEntryMutation.isPending}
                         data-testid={`button-delete-entry-${index}`}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -384,7 +395,7 @@ export default function Journal() {
                   <div className="flex items-center text-xs text-muted-foreground pt-2 border-t border-border">
                     <Calendar className="w-3 h-3 mr-1" />
                     <span data-testid={`text-entry-date-${index}`}>
-                      {new Date(entry.createdAt).toLocaleDateString('en-US', {
+                      {new Date(entry.created_at).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric'
@@ -421,7 +432,7 @@ export default function Journal() {
                   <SelectItem value="">No associated trade</SelectItem>
                   {trades.map((trade: any) => (
                     <SelectItem key={trade.id} value={trade.id}>
-                      {trade.pair} - {new Date(trade.entryTime).toLocaleDateString()}
+                      {trade.pair} - {new Date(trade.entry_time).toLocaleDateString()}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -496,15 +507,10 @@ export default function Journal() {
               <Button 
                 type="submit" 
                 className="flex-1"
-                disabled={createEntryMutation.isPending || updateEntryMutation.isPending}
+                disabled={isSubmitting}
                 data-testid="button-save-entry"
               >
-                {createEntryMutation.isPending || updateEntryMutation.isPending 
-                  ? "Saving..." 
-                  : editingEntry 
-                    ? "Update Entry" 
-                    : "Create Entry"
-                }
+                {isSubmitting ? "Saving..." : editingEntry ? "Update Entry" : "Create Entry"}
               </Button>
             </div>
           </form>

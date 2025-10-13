@@ -1,20 +1,23 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, TrendingUp, Clock, Calendar, FileText, Download } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function Reports() {
   const [selectedTimeframe, setSelectedTimeframe] = useState("1");
   const [selectedSession, setSelectedSession] = useState("all");
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [trades, setTrades] = useState<any[]>([]);
+  const [performance, setPerformance] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -28,37 +31,76 @@ export default function Reports() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, isLoading, toast]);
+    
+    if (isAuthenticated && user) {
+      fetchData();
+    }
+  }, [isAuthenticated, isLoading, user]);
 
-  const { data: performance, isLoading: performanceLoading } = useQuery({
-    queryKey: ["/api/analytics/performance"],
-    retry: false,
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Fetch performance data
+      const { data: performanceData, error: performanceError } = await supabase
+        .from('user_analytics')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
+      
+      if (performanceError) {
+        console.error('Error fetching performance data:', performanceError);
+      } else {
+        setPerformance(performanceData);
+      }
+      
+      // Fetch sessions
+      const { data: sessionsData, error: sessionsError } = await supabase
+        .from('trading_sessions')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('start_date', { ascending: false });
+      
+      if (sessionsError) {
+        console.error('Error fetching sessions:', sessionsError);
         toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
+          title: "Error",
+          description: "Failed to load trading sessions",
           variant: "destructive",
         });
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 500);
-        return;
+      } else {
+        setSessions(sessionsData || []);
       }
-    },
-  });
+      
+      // Fetch trades
+      const { data: tradesData, error: tradesError } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('entry_time', { ascending: false });
+      
+      if (tradesError) {
+        console.error('Error fetching trades:', tradesError);
+        toast({
+          title: "Error",
+          description: "Failed to load trades",
+          variant: "destructive",
+        });
+      } else {
+        setTrades(tradesData || []);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const { data: sessions = [] } = useQuery({
-    queryKey: ["/api/trading-sessions"],
-    retry: false,
-  });
-
-  const { data: trades = [] } = useQuery({
-    queryKey: ["/api/trades"],
-    retry: false,
-  });
-
-  if (isLoading || performanceLoading) {
+  if (isLoading || loading) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />

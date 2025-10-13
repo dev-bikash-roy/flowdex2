@@ -2,6 +2,14 @@
 
 FlowdeX is a Software as a Service (SaaS) application designed for financial traders to track, analyze, and improve their trading performance. The platform serves as a comprehensive trading journal and backtesting tool.
 
+## Recent Fixes
+
+### Signup and Authentication Issues Fixed
+- Resolved database column name mismatch (camelCase vs snake_case)
+- Added missing `/api/auth/user` endpoint
+- Fixed type mapping between client and server
+- See [FIXES_SUMMARY.md](FIXES_SUMMARY.md) for detailed changes
+
 ## Features
 
 ### Core Functionality
@@ -24,6 +32,7 @@ FlowdeX is a Software as a Service (SaaS) application designed for financial tra
 - ✅ Trading session management
 - ✅ Trade logging and tracking
 - ✅ Performance analytics dashboard
+- ✅ Backtest playback with TraderScasa-like interface
 - ⬜ Export functionality (CSV/PDF)
 
 #### Phase 3: Accounts & Payments
@@ -48,9 +57,15 @@ FlowdeX is a Software as a Service (SaaS) application designed for financial tra
 - React Query for state management
 - Lightweight Charts for charting
 
-### Backend
+### Backend Options
+
+#### Option 1: Supabase (Recommended)
+- Supabase for database, authentication, and real-time features
+- Built-in user management and row-level security
+- Real-time subscriptions for live data updates
+
+#### Option 2: Traditional Backend
 - Node.js with Express.js
-- TypeScript
 - PostgreSQL database (via NeonDB)
 - Drizzle ORM for database operations
 - Passport.js for authentication
@@ -64,7 +79,7 @@ FlowdeX is a Software as a Service (SaaS) application designed for financial tra
 
 ### Prerequisites
 - Node.js (v18 or higher)
-- PostgreSQL database
+- Supabase account (for Supabase option) OR PostgreSQL database (for traditional option)
 - TwelveData API key
 
 ### Installation
@@ -83,17 +98,47 @@ npm install
 3. Set up environment variables:
 Create a `.env` file in the root directory based on the `.env.example` file with your actual credentials.
 
-4. Set up PostgreSQL database:
+**Important**: For Supabase authentication, you need to obtain your service role key from the Supabase dashboard:
+   - Go to your Supabase project dashboard
+   - Navigate to Settings > API
+   - Find the "service_role" key (not the anon key)
+   - Copy it and replace "your_service_role_key_here" in your `.env` file with the actual key
+
+#### Option 1: Supabase Setup (Recommended)
+
+1. Your Supabase project is already configured with the following details:
+   - **Project URL**: https://dcfavnetfqirooxhvqsy.supabase.co
+   - **API Key**: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjZmF2bmV0ZnFpcm9veGh2cXN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5Mjk3OTEsImV4cCI6MjA3NDUwNTc5MX0.CkuDMegvqToLrLtYsA9KBFeK-Rg_buvdvJ-HF2U5y_4
+
+2. Set the authentication mode to Supabase by setting `AUTH_MODE=supabase` in your `.env` file
+
+3. Obtain your service role key from the Supabase dashboard:
+   - Go to your Supabase project dashboard
+   - Navigate to Settings > API
+   - Find the "service_role" key (not the anon key)
+   - Copy it and replace "your_service_role_key_here" in your `.env` file with the actual key
+
+2. Set up the database tables:
+   - Go to your Supabase project dashboard
+   - Navigate to the SQL Editor
+   - Copy and paste the contents of `supabase_schema.sql` into the editor
+   - Run the SQL script to create all tables and set up Row Level Security
+
+3. The authentication is already configured in your frontend with the Supabase JavaScript client.
+
+#### Option 2: Traditional Database Setup
+
+1. Set up PostgreSQL database:
    - Install PostgreSQL on your system
    - Create a new database named `flowdex`
    - Update the DATABASE_URL in your `.env` file with your actual database credentials
 
-5. Run database migrations:
+2. Run database migrations:
 ```bash
 npm run db:push
 ```
 
-6. Start the development server:
+4. Start the development server:
 ```bash
 npm run dev
 ```
@@ -194,6 +239,8 @@ For detailed information about the application architecture and setup:
 - [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - Feature development progress
 - [FINAL_IMPLEMENTATION_SUMMARY.md](FINAL_IMPLEMENTATION_SUMMARY.md) - Complete implementation overview
 - [STATUS.md](STATUS.md) - Current service status dashboard
+- [SUPABASE_SETUP.md](SUPABASE_SETUP.md) - Supabase-specific setup instructions
+- [BACKTEST_PLAYBACK.md](BACKTEST_PLAYBACK.md) - Backtest playback functionality
 
 ## Contributing
 
@@ -231,3 +278,5 @@ npm run test:api
 ```
 
 This will verify that authentication, trading sessions, and trade execution are working properly with the correct data types.
+
+```

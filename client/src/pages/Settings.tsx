@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -17,6 +16,7 @@ export default function Settings() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [profileImageUrl, setProfileImageUrl] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -39,37 +39,45 @@ export default function Settings() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const mutation = useMutation({
-    mutationFn: async (data: any) => {
-      await apiRequest("PUT", "/api/users/me", data);
-    },
-    onSuccess: () => {
-      toast({ title: "Profile Updated", description: "Your information has been saved." });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-    },
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 500);
-        return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    
+    try {
+      if (!user) {
+        throw new Error("User not authenticated");
       }
+      
+      // Update user metadata in Supabase auth
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          firstName,
+          lastName,
+          profileImageUrl,
+        }
+      });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      toast({ 
+        title: "Profile Updated", 
+        description: "Your information has been saved." 
+      });
+      
+      // Refresh user data
+      queryClient.invalidateQueries({ queryKey: ["supabase", "user"] });
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
       toast({
         title: "Error",
-        description: "Failed to update profile. Please try again.",
+        description: error.message || "Failed to update profile. Please try again.",
         variant: "destructive",
       });
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    mutation.mutate({ firstName, lastName, profileImageUrl });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading) {
@@ -100,8 +108,8 @@ export default function Settings() {
               <Label htmlFor="profileImageUrl">Profile Image URL</Label>
               <Input id="profileImageUrl" value={profileImageUrl} onChange={(e) => setProfileImageUrl(e.target.value)} />
             </div>
-            <Button type="submit" disabled={mutation.isLoading}>
-              Save
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save"}
             </Button>
           </form>
         </CardContent>
@@ -109,4 +117,3 @@ export default function Settings() {
     </div>
   );
 }
-

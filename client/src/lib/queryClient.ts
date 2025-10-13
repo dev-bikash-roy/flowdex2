@@ -7,51 +7,31 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// This file is no longer used as we've migrated from React Query to direct Supabase calls
+// Keeping it for now to avoid breaking imports, but it's deprecated
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
-
-  await throwIfResNotOk(res);
-  return res;
+  // This function is deprecated and should not be used
+  // Use Supabase client directly instead
+  throw new Error("apiRequest is deprecated. Use Supabase client directly.");
 }
 
-type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
-  on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
-      credentials: "include",
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
-    }
-
-    await throwIfResNotOk(res);
-    return await res.json();
-  };
-
+// Create a proper QueryClient instance to avoid breaking imports
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
-    },
-    mutations: {
       retry: false,
     },
   },
 });
+
+export const getQueryFn = () => {
+  // Mock function to avoid breaking imports
+  return async () => {
+    throw new Error("getQueryFn is deprecated. Use Supabase client directly.");
+  };
+};

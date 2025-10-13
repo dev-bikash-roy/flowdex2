@@ -1,19 +1,21 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TrendingUp, TrendingDown, Plus } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function Trades() {
   const [selectedSession, setSelectedSession] = useState<string>("all");
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [trades, setTrades] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -27,32 +29,75 @@ export default function Trades() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, isLoading, toast]);
+    
+    if (isAuthenticated && user) {
+      fetchData();
+    }
+  }, [isAuthenticated, isLoading, user]);
 
-  const { data: sessions = [] } = useQuery({
-    queryKey: ["/api/trading-sessions"],
-    retry: false,
-  });
-
-  const { data: trades = [], isLoading: tradesLoading } = useQuery({
-    queryKey: ["/api/trades", selectedSession !== "all" ? selectedSession : undefined],
-    retry: false,
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Fetch sessions
+      const { data: sessionsData, error: sessionsError } = await supabase
+        .from('trading_sessions')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('start_date', { ascending: false });
+      
+      if (sessionsError) {
+        console.error('Error fetching sessions:', sessionsError);
         toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
+          title: "Error",
+          description: "Failed to load trading sessions",
           variant: "destructive",
         });
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 500);
-        return;
+      } else {
+        setSessions(sessionsData || []);
       }
-    },
-  });
+      
+      // Fetch trades
+      let query = supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('entry_time', { ascending: false });
+      
+      if (selectedSession !== "all") {
+        query = query.eq('session_id', selectedSession);
+      }
+      
+      const { data: tradesData, error: tradesError } = await query;
+      
+      if (tradesError) {
+        console.error('Error fetching trades:', tradesError);
+        toast({
+          title: "Error",
+          description: "Failed to load trades",
+          variant: "destructive",
+        });
+      } else {
+        setTrades(tradesData || []);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (isLoading || tradesLoading) {
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchData();
+    }
+  }, [selectedSession, isAuthenticated, user]);
+
+  if (isLoading || loading) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
@@ -128,7 +173,7 @@ export default function Trades() {
                         {trade.pair}
                       </TableCell>
                       <TableCell data-testid={`text-trade-start-date-${index}`}>
-                        {new Date(trade.entryTime).toLocaleDateString('en-US', {
+                        {new Date(trade.entry_time).toLocaleDateString('en-US', {
                           month: '2-digit',
                           day: '2-digit',
                           year: 'numeric',
@@ -137,8 +182,8 @@ export default function Trades() {
                         })}
                       </TableCell>
                       <TableCell data-testid={`text-trade-end-date-${index}`}>
-                        {trade.exitTime 
-                          ? new Date(trade.exitTime).toLocaleDateString('en-US', {
+                        {trade.exit_time 
+                          ? new Date(trade.exit_time).toLocaleDateString('en-US', {
                               month: '2-digit',
                               day: '2-digit',
                               year: 'numeric',
@@ -158,7 +203,7 @@ export default function Trades() {
                       </TableCell>
                       <TableCell data-testid={`text-trade-execution-${index}`}>
                         <Badge variant="outline">
-                          {trade.executionType}
+                          {trade.execution_type}
                         </Badge>
                       </TableCell>
                       <TableCell data-testid={`text-trade-status-${index}`}>
@@ -176,25 +221,25 @@ export default function Trades() {
                         </Badge>
                       </TableCell>
                       <TableCell data-testid={`text-trade-entry-price-${index}`}>
-                        {parseFloat(trade.entryPrice).toFixed(5)}
+                        {parseFloat(trade.entry_price).toFixed(5)}
                       </TableCell>
                       <TableCell data-testid={`text-trade-stop-loss-${index}`}>
-                        {trade.stopLoss ? parseFloat(trade.stopLoss).toFixed(5) : '-'}
+                        {trade.stop_loss ? parseFloat(trade.stop_loss).toFixed(5) : '-'}
                       </TableCell>
                       <TableCell data-testid={`text-trade-take-profit-${index}`}>
-                        {trade.takeProfit ? parseFloat(trade.takeProfit).toFixed(5) : '-'}
+                        {trade.take_profit ? parseFloat(trade.take_profit).toFixed(5) : '-'}
                       </TableCell>
                       <TableCell data-testid={`text-trade-pnl-${index}`}>
-                        {trade.profitLoss ? (
+                        {trade.profit_loss ? (
                           <span className={`font-medium flex items-center ${
-                            parseFloat(trade.profitLoss) >= 0 ? 'text-success' : 'text-destructive'
+                            parseFloat(trade.profit_loss) >= 0 ? 'text-success' : 'text-destructive'
                           }`}>
-                            {parseFloat(trade.profitLoss) >= 0 ? (
+                            {parseFloat(trade.profit_loss) >= 0 ? (
                               <TrendingUp className="w-4 h-4 mr-1" />
                             ) : (
                               <TrendingDown className="w-4 h-4 mr-1" />
                             )}
-                            {parseFloat(trade.profitLoss) >= 0 ? '+' : ''}${trade.profitLoss}
+                            {parseFloat(trade.profit_loss) >= 0 ? '+' : ''}${trade.profit_loss}
                           </span>
                         ) : (
                           '-'
