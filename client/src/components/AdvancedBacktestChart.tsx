@@ -11,6 +11,7 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { fetchChartData } from "@/lib/chartService"; // Import the chart service
+import TwelveDataChart from "@/components/TwelveDataChart"; // Import TwelveDataChart
 
 interface TradingSession {
   id: string;
@@ -87,6 +88,7 @@ export default function AdvancedBacktestChart({
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [takeProfit, setTakeProfit] = useState("");
   const [stopLoss, setStopLoss] = useState("");
+  const [useTwelveDataChart, setUseTwelveDataChart] = useState(true); // New state for chart type
   
   const { toast } = useToast();
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -617,6 +619,13 @@ export default function AdvancedBacktestChart({
             Open Position
           </Button>
           <Button 
+            id="chart-type-toggle" 
+            onClick={() => setUseTwelveDataChart(!useTwelveDataChart)}
+            className="bg-[#4CAF50] hover:bg-[#45a049] text-white border border-[#4e525e] rounded py-2 px-3 text-sm"
+          >
+            {useTwelveDataChart ? "Standard Chart" : "TwelveData Chart"}
+          </Button>
+          <Button 
             id="fullscreen-button" 
             onClick={openFullscreen}
             className="bg-[#2962FF] hover:bg-[#1e53e5] text-white border border-[#4e525e] rounded py-2 px-3 text-sm"
@@ -627,11 +636,25 @@ export default function AdvancedBacktestChart({
       </div>
 
       {/* Chart Container */}
-      <div 
-        id="chart-container" 
-        ref={chartContainerRef} 
-        className="flex-grow relative"
-      />
+      {useTwelveDataChart ? (
+        <div className="flex-grow relative">
+          <TwelveDataChart
+            symbol={session.pair}
+            interval="1h"
+            height={500}
+            onPriceClick={(price, time) => {
+              console.log(`Price clicked: ${price} at ${time}`);
+              // You can add trade execution logic here
+            }}
+          />
+        </div>
+      ) : (
+        <div 
+          id="chart-container" 
+          ref={chartContainerRef} 
+          className="flex-grow relative"
+        />
+      )}
 
       {/* Bottom Bar */}
       <div className="bottom-bar flex-shrink-0 p-1.5 bg-[#1e222d] flex justify-between items-center border-t border-[#2a2e39]">
