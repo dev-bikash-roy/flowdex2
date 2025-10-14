@@ -279,4 +279,5 @@ npm run test:api
 
 This will verify that authentication, trading sessions, and trade execution are working properly with the correct data types.
 
-```
+```/ /   T r i g g e r   n e w   d e p l o y m e n t  
+ 
