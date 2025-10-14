@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CreateSessionModal from "@/components/CreateSessionModal";
 import TradingViewChart from "@/components/charts/TradingViewChart";
-import AdvancedBacktestChart from "@/components/AdvancedBacktestChart";
+
 import { Play, Pause, RotateCcw, Plus, BarChart3 } from "lucide-react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { supabase } from "@/lib/supabaseClient"; // Add Supabase import
 
 interface TradingSession {
@@ -69,6 +69,7 @@ export default function Backtest() {
     return 10000;
   };
 
+  const [, setLocation] = useLocation();
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<TradingSession | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
@@ -79,7 +80,7 @@ export default function Backtest() {
   const [takeProfit, setTakeProfit] = useState("");
   const [notes, setNotes] = useState("");
   const [sessionTrades, setSessionTrades] = useState<Trade[]>([]);
-  const [useAdvancedChart, setUseAdvancedChart] = useState(false);
+
   const [sessions, setSessions] = useState<TradingSession[]>([]); // Add state for sessions
   const [sessionsLoading, setSessionsLoading] = useState(false); // Add loading state
   const { toast } = useToast();
@@ -138,7 +139,6 @@ export default function Backtest() {
       const session = sessions.find((s: TradingSession) => s.id === params.id);
       if (session) {
         setSelectedSession(session);
-        setUseAdvancedChart(true);
         loadChartData(session.pair, timeframe);
         loadSessionTrades(session.id);
       }
@@ -155,14 +155,12 @@ export default function Backtest() {
           const session = sessions.find((s: TradingSession) => s.id === sessionId);
           if (session) {
             setSelectedSession(session);
-            setUseAdvancedChart(true);
             loadChartData(session.pair, timeframe);
             loadSessionTrades(session.id);
           }
         }
       } else if (path === '/backtest') {
         setSelectedSession(null);
-        setUseAdvancedChart(false);
       }
     };
 
@@ -257,19 +255,14 @@ export default function Backtest() {
     window.history.pushState({}, '', `/backtest/session/${session.id}`);
   };
 
-  // New function to handle play button click - directly show advanced chart
+  // New function to handle play button click - navigate to fullscreen chart
   const handlePlaySession = (session: any) => {
-    setSelectedSession(session);
-    setUseAdvancedChart(true);
-    loadChartData(session.pair, timeframe);
-    loadSessionTrades(session.id);
-    // Update URL to include session ID
-    window.history.pushState({}, '', `/backtest/session/${session.id}`);
+    // Navigate to fullscreen chart
+    setLocation(`/fullscreen-chart/${session.id}`);
   };
 
   const handleExitSession = () => {
     setSelectedSession(null);
-    setUseAdvancedChart(false);
     setChartData([]);
     setSessionTrades([]);
     // Update URL to remove session ID
@@ -330,15 +323,7 @@ export default function Backtest() {
     });
   };
 
-  // If we have a selected session and want to use the advanced chart, show it
-  if (selectedSession && useAdvancedChart) {
-    return (
-      <AdvancedBacktestChart
-        session={selectedSession}
-        onExit={handleExitSession}
-      />
-    );
-  }
+
 
   if (isLoading || sessionsLoading) {
     return (
@@ -400,12 +385,7 @@ export default function Backtest() {
                   >
                     Back to Sessions
                   </Button>
-                  <Button
-                    onClick={() => setUseAdvancedChart(true)}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    Advanced Chart
-                  </Button>
+
                   <Button
                     onClick={() => window.open(`/fullscreen-chart/${selectedSession.id}`, '_blank')}
                     className="bg-purple-600 hover:bg-purple-700"
