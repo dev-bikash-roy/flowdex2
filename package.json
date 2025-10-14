@@ -6,10 +6,10 @@
   "scripts": {
     "dev": "set NODE_ENV=development&& tsx server/index.ts",
     "build": "npm run build:client && npm run build:server",
-    "build:client": "vite build --config vite.config.ts",
+    "vercel-build": "cd client && npm run build",
+    "build:client": "cd client && npm install && npm run build",
     "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "set NODE_ENV=production&& node dist/index.js",
-    "vercel-build": "npm run build:client",
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "test:connection": "tsx test_connection.ts",
@@ -127,7 +127,8 @@
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.1",
     "typescript": "5.6.3",
-    "vite": "^5.4.19"
+    "vite": "^5.4.19",
+    "vite-tsconfig-paths": "^5.1.4"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"

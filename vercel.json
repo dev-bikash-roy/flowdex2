@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "server/index.ts",
+      "src": "package.json",
       "use": "@vercel/node"
     },
     {
@@ -20,7 +20,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/server/index.ts"
+      "dest": "/client/dist/$1"
     }
   ],
   "buildCommand": "npm run vercel-build"
