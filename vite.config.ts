@@ -37,14 +37,19 @@ export default defineConfig({
       "@assets": path.resolve(__dirname, "attached_assets"),
     },
   },
+  root: path.resolve(__dirname, "client"),
   build: {
-    outDir: path.resolve(__dirname, "dist"),
+    outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
     rollupOptions: {
-      input: path.resolve(__dirname, "client", "index.html")
+      input: path.resolve(__dirname, "client/index.html")
     },
+    assetsDir: 'assets',
+    copyPublicDir: true
   },
+  publicDir: path.resolve(__dirname, "client/public"),
   server: {
+    port: 5173,
     fs: {
       strict: true,
       deny: ["**/.*"],
@@ -52,7 +57,7 @@ export default defineConfig({
     // Add proxy for API requests to backend server
     proxy: {
       '/api': {
-        target: 'http://localhost:5014',
+        target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
       }

@@ -689,9 +689,9 @@ export default function Dashboard() {
                     <div key={monthIndex} className="space-y-3">
                       <h3 className="text-sm font-medium text-center text-muted-foreground">{month.name}</h3>
                       <div className="grid grid-cols-7 gap-1 text-xs">
-                        {["M", "T", "W", "T", "F", "S", "S"].map((day) => (
+                        {["M", "T", "W", "T", "F", "S", "S"].map((day, dayIndex) => (
                           <div
-                            key={day}
+                            key={`${day}-${dayIndex}`}
                             className="text-center text-muted-foreground font-medium h-6 flex items-center justify-center"
                           >
                             {day}

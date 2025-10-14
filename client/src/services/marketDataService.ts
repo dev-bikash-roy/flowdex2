@@ -129,64 +129,35 @@ class MarketDataService {
   }
 
   /**
-   * Get chart data using Twelve Data API
+   * Get chart data using the chart-data API endpoint
    */
   async getChartData(symbol: string, interval: string = '1h', limit: number = 100): Promise<CandleData[]> {
     try {
       console.log(`Fetching chart data for ${symbol} with interval ${interval} and limit ${limit}`);
       
-      // Use the new market data API endpoint
-      const params = new URLSearchParams({
-        interval,
-        outputsize: limit.toString()
-      });
-
-      const response = await fetch(`${this.baseUrl}/candles/${symbol}?${params.toString()}`);
+      // Import the chart service to use the proper authentication
+      const { fetchChartData } = await import('@/lib/chartService');
+      const response = await fetchChartData(symbol, interval, limit);
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.success && data.data?.candles) {
-        console.log(`Successfully fetched ${data.data.candles.length} candles from Twelve Data`);
-        return data.data.candles;
+      if (response && response.data && Array.isArray(response.data)) {
+        // Convert the chart service format to CandleData format
+        const candleData: CandleData[] = response.data.map((item: any) => ({
+          time: new Date(item.time).getTime() / 1000, // Convert to timestamp
+          open: parseFloat(item.open),
+          high: parseFloat(item.high),
+          low: parseFloat(item.low),
+          close: parseFloat(item.close),
+          volume: item.volume ? parseFloat(item.volume) : 0
+        }));
+        
+        console.log(`Successfully converted ${candleData.length} candles`);
+        return candleData;
       } else {
-        throw new Error(data.error || 'Invalid response format from Twelve Data API');
+        throw new Error('Invalid response format from chart API');
       }
     } catch (error) {
-      console.error('Error fetching chart data from Twelve Data:', error);
-      
-      // Fallback to legacy endpoint if available
-      try {
-        console.log('Trying legacy chart-data endpoint...');
-        const params = new URLSearchParams({
-          symbol,
-          interval,
-          limit: limit.toString()
-        });
-
-        const response = await fetch(`/api/chart-data?${params.toString()}`);
-        
-        if (!response.ok) {
-          throw new Error(`Legacy API HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        // Handle legacy format
-        if (Array.isArray(data)) {
-          return data;
-        } else if (data.data && Array.isArray(data.data)) {
-          return data.data;
-        } else {
-          throw new Error('Invalid legacy response format');
-        }
-      } catch (legacyError) {
-        console.error('Legacy endpoint also failed:', legacyError);
-        throw error; // Throw original error
-      }
+      console.error('Error fetching chart data:', error);
+      throw error;
     }
   }
 

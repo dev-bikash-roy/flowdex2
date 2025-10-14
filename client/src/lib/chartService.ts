@@ -103,8 +103,16 @@ export async function fetchChartData(
   try {
     console.log(`Fetching chart data for ${symbol} with interval ${interval}`);
     
+    // Get the session token from Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    
     // Try to fetch from the backend API first
-    const response = await fetch(`/api/chart-data?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(interval)}&limit=${limit}`);
+    const response = await fetch(`/api/chart-data?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(interval)}&limit=${limit}`, {
+      headers: {
+        'Authorization': session?.access_token ? `Bearer ${session.access_token}` : '',
+        'Content-Type': 'application/json'
+      }
+    });
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -142,8 +150,16 @@ export async function fetchChartData(
  */
 export async function fetchCurrentPrice(symbol: string): Promise<any> {
   try {
+    // Get the session token from Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    
     // Try to fetch from the backend API first
-    const response = await fetch(`/api/price?symbol=${encodeURIComponent(symbol)}`);
+    const response = await fetch(`/api/price?symbol=${encodeURIComponent(symbol)}`, {
+      headers: {
+        'Authorization': session?.access_token ? `Bearer ${session.access_token}` : '',
+        'Content-Type': 'application/json'
+      }
+    });
     
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status}`);
