@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase } from "../lib/supabaseClient";
 
 export function useAuth() {
   const [user, setUser] = useState<any>(null)
@@ -32,3 +32,5 @@ export function useAuth() {
     isAuthenticated: !!user,
   }
 }
+
+export default useAuth;
