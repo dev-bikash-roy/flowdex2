@@ -11,15 +11,15 @@ if (!process.env.TWELVEDATA_API_KEY) {
 }
 
 // Test our TwelveData service
-import { twelveDataService } from './server/services/twelveDataService.js';
+import { getTimeSeries, getPrice } from './server/services/twelveDataService.js';
 
 async function testService() {
   try {
     console.log('Testing TwelveData service...');
     
     // Test getting time series data
-    console.log('Fetching EURUSD data...');
-    const data = await twelveDataService.getTimeSeries('EURUSD', '1h', 10);
+    console.log('Fetching AAPL data...');
+    const data = await getTimeSeries('AAPL', '1h', 10);
     
     console.log('API Response:');
     console.log('Status:', data.status);
@@ -31,12 +31,10 @@ async function testService() {
       console.log('Last data point:', data.values[data.values.length - 1]);
     }
     
-    // Test formatting for chart
-    const chartData = twelveDataService.formatCandlesForChart(data);
-    console.log('Chart data count:', chartData.length);
-    if (chartData.length > 0) {
-      console.log('First chart point:', chartData[0]);
-    }
+    // Test getting price data
+    console.log('Fetching AAPL price...');
+    const priceData = await getPrice('AAPL');
+    console.log('Price data:', priceData);
     
     console.log('✅ TwelveData service test completed successfully!');
     
