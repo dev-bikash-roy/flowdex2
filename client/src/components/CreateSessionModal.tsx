@@ -14,11 +14,12 @@ import { tradingPairs } from "@/utils/tradingPairUtils";
 interface CreateSessionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSessionCreated?: () => void;
 }
 
 
 
-export default function CreateSessionModal({ open, onOpenChange }: CreateSessionModalProps) {
+export default function CreateSessionModal({ open, onOpenChange, onSessionCreated }: CreateSessionModalProps) {
   const [formData, setFormData] = useState({
     name: "",
     startingBalance: "10000",
@@ -120,6 +121,9 @@ export default function CreateSessionModal({ open, onOpenChange }: CreateSession
         startDate: new Date().toISOString().split('T')[0],
         description: "",
       });
+      
+      // Trigger callback to refresh sessions
+      onSessionCreated?.();
     } catch (error: any) {
       console.error("Error creating session:", error);
       toast({

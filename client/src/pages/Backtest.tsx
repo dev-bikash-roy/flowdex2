@@ -343,7 +343,7 @@ export default function Backtest() {
         </div>
         <Button
           onClick={() => setCreateModalOpen(true)}
-          className="flex items-center space-x-2"
+          className="flex items-center space-x-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all duration-300"
           data-testid="button-new-session"
         >
           <Plus className="w-4 h-4" />
@@ -560,6 +560,7 @@ export default function Backtest() {
                 <p className="mb-6">Create your first backtesting session to get started</p>
                 <Button
                   onClick={() => setCreateModalOpen(true)}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all duration-300"
                   data-testid="button-create-first-session"
                 >
                   Create Your First Session
@@ -580,11 +581,14 @@ export default function Backtest() {
                 const pnl = currentBalance - startingBalance;
 
                 return (
-                  <Card key={session.id} className="relative border-0 shadow-soft hover:shadow-medium transition-all duration-300">
-                    <CardHeader>
+                  <Card key={session.id} className="relative border-0 bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-900/50 dark:via-slate-800/30 dark:to-slate-900/50 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50">
+                    <CardHeader className="relative overflow-hidden">
+                      {/* Subtle gradient overlay */}
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500"></div>
+                      
                       <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle className="text-lg" data-testid={`text-session-name-${index}`}>
+                          <CardTitle className="text-lg font-semibold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent" data-testid={`text-session-name-${index}`}>
                             {session.name}
                           </CardTitle>
                           <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
@@ -606,8 +610,8 @@ export default function Backtest() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <div className={`w-3 h-3 rounded-full ${session.isActive ? 'bg-success' : 'bg-muted'}`}></div>
-                          <span className="text-sm text-muted-foreground">
+                          <div className={`w-3 h-3 rounded-full shadow-sm ${session.isActive ? 'bg-gradient-to-r from-green-400 to-green-500 shadow-green-200' : 'bg-gradient-to-r from-gray-400 to-gray-500 shadow-gray-200'}`}></div>
+                          <span className={`text-sm font-medium px-2 py-1 rounded-full text-xs ${session.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400'}`}>
                             {session.isActive ? 'Active' : 'Paused'}
                           </span>
                         </div>
@@ -630,15 +634,15 @@ export default function Backtest() {
 
                         <div className="flex items-center justify-between text-sm">
                           <span>P&L:</span>
-                          <span className={`font-medium ${pnl >= 0 ? 'text-success' : 'text-destructive'}`} data-testid={`text-session-pnl-${index}`}>
+                          <span className={`font-bold px-2 py-1 rounded-md text-sm ${pnl >= 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`} data-testid={`text-session-pnl-${index}`}>
                             {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
                           </span>
                         </div>
 
-                        <div className="flex items-center space-x-2 pt-3 border-t border-border">
+                        <div className="flex items-center space-x-2 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
                           <Button
                             size="sm"
-                            className="flex-1"
+                            className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all duration-300"
                             onClick={() => handlePlaySession(session)}
                             data-testid={`button-play-session-${index}`}
                           >
@@ -649,6 +653,7 @@ export default function Backtest() {
                           <Button
                             size="sm"
                             variant="outline"
+                            className="border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800 transition-all duration-200"
                             data-testid={`button-pause-session-${index}`}
                           >
                             <Pause className="w-4 h-4" />
@@ -657,6 +662,7 @@ export default function Backtest() {
                           <Button
                             size="sm"
                             variant="outline"
+                            className="border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800 transition-all duration-200"
                             data-testid={`button-reset-session-${index}`}
                           >
                             <RotateCcw className="w-4 h-4" />
@@ -665,6 +671,7 @@ export default function Backtest() {
                           <Button
                             size="sm"
                             variant="destructive"
+                            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all duration-300"
                             onClick={() => handleDeleteSession(session.id)}
                             data-testid={`button-delete-session-${index}`}
                           >
@@ -684,6 +691,7 @@ export default function Backtest() {
       <CreateSessionModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
+        onSessionCreated={fetchSessions}
       />
     </div>
   );
