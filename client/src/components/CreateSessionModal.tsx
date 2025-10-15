@@ -132,7 +132,7 @@ export default function CreateSessionModal({ open, onOpenChange }: CreateSession
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[95vh] overflow-hidden p-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700/50" data-testid="modal-create-session">
+      <DialogContent className="w-[95vw] sm:max-w-[700px] max-h-[95vh] overflow-y-auto p-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700/50" data-testid="modal-create-session">
         {/* Gradient Header */}
         <div className="relative bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 p-6 pb-8">
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-blue-400/20 to-purple-400/20"></div>
@@ -156,7 +156,7 @@ export default function CreateSessionModal({ open, onOpenChange }: CreateSession
         </div>
 
         {/* Form Content */}
-        <div className="p-8 bg-slate-900/95 backdrop-blur-sm">
+        <div className="p-4 sm:p-8 bg-slate-900/95 backdrop-blur-sm max-h-[calc(95vh-120px)] overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Session Name */}
             <div className="space-y-3">
@@ -174,7 +174,7 @@ export default function CreateSessionModal({ open, onOpenChange }: CreateSession
             </div>
 
             {/* Balance and Date Row */}
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-3">
                 <Label htmlFor="startingBalance" className="text-white font-medium text-base">
                   Starting Balance

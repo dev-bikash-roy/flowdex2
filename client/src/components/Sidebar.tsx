@@ -1,8 +1,9 @@
 import { useLocation } from "wouter";
-import { ChartLine, Play, BarChart3, TrendingUp, BookOpen, NotebookPen, FileText, Settings, LogOut } from "lucide-react";
+import { ChartLine, Play, BarChart3, TrendingUp, BookOpen, NotebookPen, FileText, Settings, LogOut, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 const navigationItems = [
   { href: "/", icon: ChartLine, label: "Dashboard" },
@@ -14,7 +15,11 @@ const navigationItems = [
   { href: "/reports", icon: FileText, label: "Reports" },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+export default function Sidebar({ onClose }: SidebarProps) {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -58,20 +63,38 @@ export default function Sidebar() {
     }
   };
 
+  const handleNavigation = (href: string) => {
+    setLocation(href);
+    onClose?.(); // Close mobile sidebar after navigation
+  };
+
   return (
-    <div className="w-64 bg-card border-r border-border flex flex-col" data-testid="sidebar">
+    <div className="w-64 bg-card border-r border-border flex flex-col h-full" data-testid="sidebar">
       {/* Logo Section */}
       <div className="p-6 border-b border-border">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 flex items-center justify-center">
-            <img 
-              src="/logo/flowdex-logo.png"
-              alt="FlowdeX"
-              className="w-8 h-8 object-contain"
-              style={{ filter: 'brightness(0) invert(1)' }}
-            />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 flex items-center justify-center">
+              <img 
+                src="/logo/flowdex-logo.png"
+                alt="FlowdeX"
+                className="w-8 h-8 object-contain"
+                style={{ filter: 'brightness(0) invert(1)' }}
+              />
+            </div>
+            <span className="text-xl font-semibold">FlowdeX</span>
           </div>
-          <span className="text-xl font-semibold">FlowdeX</span>
+          {/* Mobile Close Button */}
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="lg:hidden h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -85,7 +108,7 @@ export default function Sidebar() {
             return (
               <button
                 key={item.href}
-                onClick={() => setLocation(item.href)}
+                onClick={() => handleNavigation(item.href)}
                 className={cn(
                   "w-full flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all",
                   isActive
@@ -113,7 +136,7 @@ export default function Sidebar() {
             <span>Start Live Trading</span>
           </button>
           <button
-            onClick={() => setLocation('/settings')}
+            onClick={() => handleNavigation('/settings')}
             className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
             data-testid="button-settings"
           >
