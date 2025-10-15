@@ -103,34 +103,35 @@ export default function Backtest() {
   }, [isAuthenticated, isLoading, toast]);
 
   // Load sessions from Supabase
-  useEffect(() => {
-    const loadSessions = async () => {
-      if (!isAuthenticated) return;
+  const loadSessions = async () => {
+    if (!isAuthenticated) return;
 
-      setSessionsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('trading_sessions')
-          .select('*')
-          .order('created_at', { ascending: false });
+    setSessionsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('trading_sessions')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
 
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        setSessions(data || []);
-      } catch (error) {
-        console.error("Error loading sessions:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load sessions. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setSessionsLoading(false);
+      if (error) {
+        throw new Error(error.message);
       }
-    };
 
+      setSessions(data || []);
+    } catch (error) {
+      console.error("Error loading sessions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load sessions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadSessions();
   }, [isAuthenticated, toast]);
 
@@ -691,7 +692,7 @@ export default function Backtest() {
       <CreateSessionModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onSessionCreated={fetchSessions}
+        onSessionCreated={loadSessions}
       />
     </div>
   );
