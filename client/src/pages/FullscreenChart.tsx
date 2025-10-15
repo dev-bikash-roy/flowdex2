@@ -11,11 +11,15 @@ interface TradingSession {
   id: string;
   name: string;
   pair: string;
-  startingBalance: string;
-  currentBalance: string;
+  startingBalance?: string;
+  currentBalance?: string;
+  starting_balance?: number | string;
+  current_balance?: number | string;
   startDate: string;
+  start_date?: string;
   description?: string;
-  isActive: boolean;
+  isActive?: boolean;
+  is_active?: boolean;
 }
 
 export default function FullscreenChart() {
@@ -24,6 +28,19 @@ export default function FullscreenChart() {
   const { user } = useAuth();
   const [session, setSession] = useState<TradingSession | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Helper function to safely parse session balance values
+  const getSessionBalance = (sessionData: any, field: 'starting' | 'current'): number => {
+    const altFieldName = field === 'starting' ? 'starting_balance' : 'current_balance';
+    
+    const altValue = sessionData[altFieldName];
+    if (altValue !== undefined && altValue !== null) {
+      const parsed = typeof altValue === 'number' ? altValue : parseFloat(String(altValue));
+      if (!isNaN(parsed)) return parsed;
+    }
+    
+    return field === 'starting' ? 10000 : 10000;
+  };
 
   useEffect(() => {
     if (sessionId && user) {
@@ -46,12 +63,19 @@ export default function FullscreenChart() {
       }
 
       if (data) {
+        const startingBalance = getSessionBalance(data, 'starting');
+        const currentBalance = getSessionBalance(data, 'current');
+        
+        // Ensure we have valid balance values
+        const finalStartingBalance = startingBalance > 0 ? startingBalance : 10000;
+        const finalCurrentBalance = currentBalance > 0 ? currentBalance : finalStartingBalance;
+        
         setSession({
           id: data.id,
           name: data.name,
           pair: data.pair,
-          startingBalance: data.starting_balance?.toString() || '0',
-          currentBalance: data.current_balance?.toString() || '0',
+          startingBalance: finalStartingBalance.toString(),
+          currentBalance: finalCurrentBalance.toString(),
           startDate: data.start_date,
           description: data.description,
           isActive: data.is_active

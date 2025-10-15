@@ -19,11 +19,15 @@ interface TradingSession {
   id: string;
   name: string;
   pair: string;
-  startingBalance: string;
-  currentBalance: string;
+  startingBalance?: string;
+  currentBalance?: string;
+  starting_balance?: number | string;
+  current_balance?: number | string;
   startDate: string;
+  start_date?: string;
   description?: string;
-  isActive: boolean;
+  isActive?: boolean;
+  is_active?: boolean;
 }
 
 interface Trade {
@@ -54,20 +58,22 @@ export default function Backtest() {
     const fieldName = field === 'starting' ? 'startingBalance' : 'currentBalance';
     const altFieldName = field === 'starting' ? 'starting_balance' : 'current_balance';
     
-    // Try the primary field name
-    if (session[fieldName as keyof TradingSession]) {
-      const parsed = parseFloat(session[fieldName as keyof TradingSession] as string);
+    // Try alternative field name first (snake_case from database)
+    const altValue = (session as any)[altFieldName];
+    if (altValue !== undefined && altValue !== null) {
+      const parsed = typeof altValue === 'number' ? altValue : parseFloat(String(altValue));
       if (!isNaN(parsed)) return parsed;
     }
     
-    // Try alternative field name (snake_case from database)
-    if ((session as any)[altFieldName]) {
-      const parsed = parseFloat((session as any)[altFieldName]);
+    // Try the primary field name
+    const primaryValue = session[fieldName as keyof TradingSession];
+    if (primaryValue !== undefined && primaryValue !== null) {
+      const parsed = typeof primaryValue === 'number' ? primaryValue : parseFloat(String(primaryValue));
       if (!isNaN(parsed)) return parsed;
     }
     
     // Default fallback
-    return 10000;
+    return field === 'starting' ? 10000 : 10000;
   };
 
   const [, setLocation] = useLocation();
@@ -85,7 +91,7 @@ export default function Backtest() {
   const [sessions, setSessions] = useState<TradingSession[]>([]); // Add state for sessions
   const [sessionsLoading, setSessionsLoading] = useState(false); // Add loading state
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const params = useParams();
 
   useEffect(() => {
@@ -104,19 +110,26 @@ export default function Backtest() {
 
   // Load sessions from Supabase
   const loadSessions = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user?.id) {
+      console.log('Cannot load sessions - not authenticated or no user ID');
+      return;
+    }
 
+    console.log('Loading sessions for user:', user.id);
     setSessionsLoading(true);
+    
     try {
       const { data, error } = await supabase
         .from('trading_sessions')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
+        console.error('Supabase error:', error);
         throw new Error(error.message);
       }
+
 
       setSessions(data || []);
     } catch (error) {
@@ -132,8 +145,10 @@ export default function Backtest() {
   };
 
   useEffect(() => {
-    loadSessions();
-  }, [isAuthenticated, toast]);
+    if (isAuthenticated && user) {
+      loadSessions();
+    }
+  }, [isAuthenticated, user, toast]);
 
   // Auto-select session based on URL parameter
   useEffect(() => {
@@ -571,28 +586,25 @@ export default function Backtest() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {(sessions as TradingSession[]).map((session: TradingSession, index: number) => {
-                // Debug logging to see what data we're getting
-                console.log('Session data:', session);
-                console.log('startingBalance field:', session.startingBalance);
-                console.log('currentBalance field:', session.currentBalance);
-                
                 // Use helper function for robust parsing
                 const startingBalance = getSessionBalance(session, 'starting');
                 const currentBalance = getSessionBalance(session, 'current');
                 const pnl = currentBalance - startingBalance;
+                
+
 
                 return (
-                  <Card key={session.id} className="relative border-0 bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-900/50 dark:via-slate-800/30 dark:to-slate-900/50 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50">
+                  <Card key={session.id} className="relative border-0 bg-gradient-to-br from-slate-900/90 via-slate-800/80 to-slate-900/90 shadow-2xl hover:shadow-cyan-500/20 hover:scale-[1.02] transition-all duration-300 backdrop-blur-sm border border-slate-700/50 hover:border-cyan-500/30">
                     <CardHeader className="relative overflow-hidden">
-                      {/* Subtle gradient overlay */}
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500"></div>
+                      {/* Glowing gradient overlay */}
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 shadow-lg shadow-cyan-500/50"></div>
                       
                       <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle className="text-lg font-semibold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent" data-testid={`text-session-name-${index}`}>
+                          <CardTitle className="text-lg font-semibold bg-gradient-to-r from-white via-cyan-100 to-blue-100 bg-clip-text text-transparent" data-testid={`text-session-name-${index}`}>
                             {session.name}
                           </CardTitle>
-                          <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-slate-300">
                             <span data-testid={`text-session-pair-${index}`}>
                               Pair: {formatTradingPair(session.pair)}
                             </span>
@@ -600,7 +612,7 @@ export default function Backtest() {
                               Balance: ${currentBalance.toLocaleString()}
                             </span>
                           </div>
-                          <div className="text-xs text-muted-foreground mt-1" data-testid={`text-session-date-${index}`}>
+                          <div className="text-xs text-slate-400 mt-1" data-testid={`text-session-date-${index}`}>
                             Date: {session.startDate ? new Date(session.startDate).toLocaleDateString('en-US', {
                               year: 'numeric',
                               month: '2-digit',
@@ -612,7 +624,7 @@ export default function Backtest() {
                         </div>
                         <div className="flex items-center space-x-2">
                           <div className={`w-3 h-3 rounded-full shadow-sm ${session.isActive ? 'bg-gradient-to-r from-green-400 to-green-500 shadow-green-200' : 'bg-gradient-to-r from-gray-400 to-gray-500 shadow-gray-200'}`}></div>
-                          <span className={`text-sm font-medium px-2 py-1 rounded-full text-xs ${session.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400'}`}>
+                          <span className={`text-sm font-medium px-3 py-1 rounded-full text-xs shadow-lg ${session.isActive ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-400 border border-green-500/30' : 'bg-gradient-to-r from-gray-500/20 to-slate-500/20 text-gray-400 border border-gray-500/30'}`}>
                             {session.isActive ? 'Active' : 'Paused'}
                           </span>
                         </div>
@@ -621,26 +633,26 @@ export default function Backtest() {
                     <CardContent>
                       <div className="space-y-3">
                         {session.description && (
-                          <p className="text-sm text-muted-foreground" data-testid={`text-session-description-${index}`}>
+                          <p className="text-sm text-slate-300" data-testid={`text-session-description-${index}`}>
                             {session.description}
                           </p>
                         )}
 
-                        <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center justify-between text-sm text-slate-300">
                           <span>Starting Balance:</span>
-                          <span className="font-medium" data-testid={`text-session-starting-balance-${index}`}>
+                          <span className="font-medium text-white" data-testid={`text-session-starting-balance-${index}`}>
                             ${startingBalance.toLocaleString()}
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center justify-between text-sm text-slate-300">
                           <span>P&L:</span>
-                          <span className={`font-bold px-2 py-1 rounded-md text-sm ${pnl >= 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`} data-testid={`text-session-pnl-${index}`}>
+                          <span className={`font-bold px-3 py-1 rounded-lg text-sm shadow-lg ${pnl >= 0 ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-400 border border-green-500/30' : 'bg-gradient-to-r from-red-500/20 to-rose-500/20 text-red-400 border border-red-500/30'}`} data-testid={`text-session-pnl-${index}`}>
                             {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
                           </span>
                         </div>
 
-                        <div className="flex items-center space-x-2 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
+                        <div className="flex items-center space-x-2 pt-3 border-t border-slate-600/50">
                           <Button
                             size="sm"
                             className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all duration-300"
@@ -654,7 +666,7 @@ export default function Backtest() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800 transition-all duration-200"
+                            className="border-slate-600/50 hover:bg-slate-700/50 hover:border-slate-500/50 text-slate-300 hover:text-white transition-all duration-200"
                             data-testid={`button-pause-session-${index}`}
                           >
                             <Pause className="w-4 h-4" />
@@ -663,7 +675,7 @@ export default function Backtest() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-slate-300 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800 transition-all duration-200"
+                            className="border-slate-600/50 hover:bg-slate-700/50 hover:border-slate-500/50 text-slate-300 hover:text-white transition-all duration-200"
                             data-testid={`button-reset-session-${index}`}
                           >
                             <RotateCcw className="w-4 h-4" />
