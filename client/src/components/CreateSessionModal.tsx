@@ -132,133 +132,144 @@ export default function CreateSessionModal({ open, onOpenChange }: CreateSession
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto" data-testid="modal-create-session">
-        <DialogHeader className="space-y-3">
-          <DialogTitle className="flex items-center justify-between text-xl font-semibold">
-            Create New Session
+      <DialogContent className="sm:max-w-[700px] max-h-[95vh] overflow-hidden p-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700/50" data-testid="modal-create-session">
+        {/* Gradient Header */}
+        <div className="relative bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 p-6 pb-8">
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 via-blue-400/20 to-purple-400/20"></div>
+          <div className="relative flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">Create Session</h2>
+              <p className="text-cyan-100/90 text-sm">
+                Create a new backtesting session to test your trading strategies.
+              </p>
+            </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="h-10 w-10 p-0 text-white hover:bg-white/20 rounded-full"
               data-testid="button-close-modal"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
-          </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
-            Create a new backtesting session to test your trading strategies.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-medium">
-              Session Name *
-            </Label>
-            <Input
-              id="name"
-              placeholder="Enter session name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="h-11"
-              data-testid="input-session-name"
-            />
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startingBalance" className="text-sm font-medium">
-                Starting Balance
+        </div>
+
+        {/* Form Content */}
+        <div className="p-8 bg-slate-900/95 backdrop-blur-sm">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Session Name */}
+            <div className="space-y-3">
+              <Label htmlFor="name" className="text-white font-medium text-base">
+                Session Name
               </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                  $
-                </span>
+              <Input
+                id="name"
+                placeholder="Session Name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="h-14 bg-slate-800/50 border-slate-600/50 text-white placeholder:text-slate-400 text-base focus:border-cyan-400 focus:ring-cyan-400/20"
+                data-testid="input-session-name"
+              />
+            </div>
+
+            {/* Balance and Date Row */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label htmlFor="startingBalance" className="text-white font-medium text-base">
+                  Starting Balance
+                </Label>
                 <Input
                   id="startingBalance"
                   type="number"
                   value={formData.startingBalance}
                   onChange={(e) => setFormData({ ...formData, startingBalance: e.target.value })}
-                  className="h-11 pl-8"
+                  className="h-14 bg-slate-800/50 border-slate-600/50 text-white placeholder:text-slate-400 text-base focus:border-cyan-400 focus:ring-cyan-400/20"
                   data-testid="input-starting-balance"
                 />
               </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="startDate" className="text-white font-medium text-base">
+                  Start Date
+                </Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  className="h-14 bg-slate-800/50 border-slate-600/50 text-white text-base focus:border-cyan-400 focus:ring-cyan-400/20"
+                  data-testid="input-start-date"
+                />
+              </div>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="startDate" className="text-sm font-medium">
-                Start Date
+
+            {/* Trading Pair */}
+            <div className="space-y-3">
+              <Label htmlFor="pair" className="text-white font-medium text-base">
+                Pair
               </Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                className="h-11"
-                data-testid="input-start-date"
+              <Select 
+                value={formData.pair} 
+                onValueChange={(value) => setFormData({ ...formData, pair: value })}
+              >
+                <SelectTrigger className="h-14 bg-slate-800/50 border-slate-600/50 text-white text-base focus:border-cyan-400 focus:ring-cyan-400/20" data-testid="select-trading-pair">
+                  <SelectValue placeholder="Select pair..." className="text-slate-400" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-600 max-h-[300px]">
+                  {tradingPairs.map((pair) => (
+                    <SelectItem 
+                      key={pair.value} 
+                      value={pair.value} 
+                      className="py-4 text-white hover:bg-slate-700 focus:bg-slate-700"
+                    >
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium text-white">{pair.label}</span>
+                        <span className="text-xs text-slate-400">{pair.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-3">
+              <Label htmlFor="description" className="text-white font-medium text-base">
+                Description (Optional)
+              </Label>
+              <Textarea
+                id="description"
+                placeholder="Session Description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="h-24 bg-slate-800/50 border-slate-600/50 text-white placeholder:text-slate-400 text-base resize-none focus:border-cyan-400 focus:ring-cyan-400/20"
+                data-testid="textarea-description"
               />
             </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="pair" className="text-sm font-medium">
-              Trading Pair *
-            </Label>
-            <Select 
-              value={formData.pair} 
-              onValueChange={(value) => setFormData({ ...formData, pair: value })}
-            >
-              <SelectTrigger className="h-11" data-testid="select-trading-pair">
-                <SelectValue placeholder="Select trading pair..." />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {tradingPairs.map((pair) => (
-                  <SelectItem key={pair.value} value={pair.value} className="py-3">
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium">{pair.label}</span>
-                      <span className="text-xs text-muted-foreground">{pair.description}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm font-medium">
-              Description (Optional)
-            </Label>
-            <Textarea
-              id="description"
-              placeholder="Add a description for your trading session..."
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="h-20 resize-none"
-              data-testid="textarea-description"
-            />
-          </div>
-          
-          <div className="flex items-center space-x-3 pt-6 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="flex-1 h-11"
-              onClick={() => onOpenChange(false)}
-              data-testid="button-cancel"
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              className="flex-1 h-11 bg-primary hover:bg-primary/90"
-              disabled={isLoading}
-              data-testid="button-create-session"
-            >
-              {isLoading ? "Creating..." : "Create Session"}
-            </Button>
-          </div>
-        </form>
+
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-4 pt-8 border-t border-slate-700/50">
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="flex-1 h-14 bg-transparent border-slate-600 text-white hover:bg-slate-800/50 hover:border-slate-500 text-base font-medium"
+                onClick={() => onOpenChange(false)}
+                data-testid="button-cancel"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="flex-1 h-14 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-medium text-base shadow-lg shadow-cyan-500/25"
+                disabled={isLoading}
+                data-testid="button-create-session"
+              >
+                {isLoading ? "Creating..." : "Create Session"}
+              </Button>
+            </div>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
