@@ -9,28 +9,14 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { X } from "lucide-react";
+import { tradingPairs } from "@/utils/tradingPairUtils";
 
 interface CreateSessionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const tradingPairs = [
-  "EURUSD",
-  "GBPUSD",
-  "USDJPY",
-  "USDCHF",
-  "AUDUSD",
-  "USDCAD",
-  "NZDUSD",
-  "XAUUSD",
-  "XAGUSD",
-  "BTCUSD",
-  "ETHUSD",
-  "US30",
-  "NAS100",
-  "SPX500",
-];
+
 
 export default function CreateSessionModal({ open, onOpenChange }: CreateSessionModalProps) {
   const [formData, setFormData] = useState({
@@ -146,94 +132,118 @@ export default function CreateSessionModal({ open, onOpenChange }: CreateSession
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]" data-testid="modal-create-session">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto" data-testid="modal-create-session">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="flex items-center justify-between text-xl font-semibold">
             Create New Session
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onOpenChange(false)}
+              className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
               data-testid="button-close-modal"
             >
               <X className="h-4 w-4" />
             </Button>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm text-muted-foreground">
             Create a new backtesting session to test your trading strategies.
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="name">Session Name *</Label>
+        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-sm font-medium">
+              Session Name *
+            </Label>
             <Input
               id="name"
               placeholder="Enter session name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="h-11"
               data-testid="input-session-name"
             />
           </div>
           
-          <div>
-            <Label htmlFor="startingBalance">Starting Balance</Label>
-            <Input
-              id="startingBalance"
-              type="number"
-              value={formData.startingBalance}
-              onChange={(e) => setFormData({ ...formData, startingBalance: e.target.value })}
-              data-testid="input-starting-balance"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="startingBalance" className="text-sm font-medium">
+                Starting Balance
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                  $
+                </span>
+                <Input
+                  id="startingBalance"
+                  type="number"
+                  value={formData.startingBalance}
+                  onChange={(e) => setFormData({ ...formData, startingBalance: e.target.value })}
+                  className="h-11 pl-8"
+                  data-testid="input-starting-balance"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="startDate" className="text-sm font-medium">
+                Start Date
+              </Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                className="h-11"
+                data-testid="input-start-date"
+              />
+            </div>
           </div>
           
-          <div>
-            <Label htmlFor="pair">Trading Pair *</Label>
+          <div className="space-y-2">
+            <Label htmlFor="pair" className="text-sm font-medium">
+              Trading Pair *
+            </Label>
             <Select 
               value={formData.pair} 
               onValueChange={(value) => setFormData({ ...formData, pair: value })}
             >
-              <SelectTrigger data-testid="select-trading-pair">
-                <SelectValue placeholder="Select pair..." />
+              <SelectTrigger className="h-11" data-testid="select-trading-pair">
+                <SelectValue placeholder="Select trading pair..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[300px]">
                 {tradingPairs.map((pair) => (
-                  <SelectItem key={pair} value={pair}>
-                    {pair}
+                  <SelectItem key={pair.value} value={pair.value} className="py-3">
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">{pair.label}</span>
+                      <span className="text-xs text-muted-foreground">{pair.description}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           
-          <div>
-            <Label htmlFor="startDate">Start Date</Label>
-            <Input
-              id="startDate"
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-              data-testid="input-start-date"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="description">Description (Optional)</Label>
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-sm font-medium">
+              Description (Optional)
+            </Label>
             <Textarea
               id="description"
-              placeholder="Session description..."
+              placeholder="Add a description for your trading session..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="h-24 resize-none"
+              className="h-20 resize-none"
               data-testid="textarea-description"
             />
           </div>
           
-          <div className="flex items-center space-x-3 pt-4">
+          <div className="flex items-center space-x-3 pt-6 border-t">
             <Button 
               type="button" 
               variant="outline" 
-              className="flex-1"
+              className="flex-1 h-11"
               onClick={() => onOpenChange(false)}
               data-testid="button-cancel"
             >
@@ -241,11 +251,11 @@ export default function CreateSessionModal({ open, onOpenChange }: CreateSession
             </Button>
             <Button 
               type="submit" 
-              className="flex-1"
+              className="flex-1 h-11 bg-primary hover:bg-primary/90"
               disabled={isLoading}
               data-testid="button-create-session"
             >
-              {isLoading ? "Loading..." : "Create Session"}
+              {isLoading ? "Creating..." : "Create Session"}
             </Button>
           </div>
         </form>

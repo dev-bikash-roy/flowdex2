@@ -5,6 +5,7 @@ import { X, ArrowLeft } from "lucide-react";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
+import { formatTradingPair } from "@/utils/tradingPairUtils";
 
 interface TradingSession {
   id: string;
@@ -110,7 +111,7 @@ export default function FullscreenChart() {
           </Button>
           <div className="text-white">
             <h1 className="text-lg font-semibold">{session.name}</h1>
-            <p className="text-sm text-gray-400">{session.pair} • Full Screen Chart</p>
+            <p className="text-sm text-gray-400">{formatTradingPair(session.pair)} • Full Screen Chart</p>
           </div>
         </div>
         

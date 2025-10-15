@@ -8,6 +8,7 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import TradingViewWidget from "@/components/TradingViewWidget";
+import { formatTradingPair } from "@/utils/tradingPairUtils";
 
 interface TradingSession {
   id: string;
@@ -97,7 +98,7 @@ export default function AdvancedBacktestChart({
       <div className="flex-shrink-0 p-3 bg-[#1e222d] flex items-center justify-between gap-4 border-b border-[#2a2e39]">
         <div className="flex items-center gap-4">
           <div className="text-base font-medium pr-4 border-r border-[#2a2e39]">
-            {session.pair}
+            {formatTradingPair(session.pair)}
           </div>
           <div className="text-sm text-gray-400">
             {session.name}

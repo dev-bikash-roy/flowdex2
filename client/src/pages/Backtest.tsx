@@ -13,6 +13,7 @@ import TradingViewChart from "@/components/charts/TradingViewChart";
 import { Play, Pause, RotateCcw, Plus, BarChart3 } from "lucide-react";
 import { useParams, useLocation } from "wouter";
 import { supabase } from "@/lib/supabaseClient"; // Add Supabase import
+import { formatTradingPair } from "@/utils/tradingPairUtils";
 
 interface TradingSession {
   id: string;
@@ -358,7 +359,7 @@ export default function Backtest() {
                 <div>
                   <CardTitle className="flex items-center space-x-2">
                     <BarChart3 className="w-5 h-5" />
-                    <span>{selectedSession.name} - {selectedSession.pair}</span>
+                    <span>{selectedSession.name} - {formatTradingPair(selectedSession.pair)}</span>
                   </CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
                     {selectedSession.startDate ? new Date(selectedSession.startDate).toLocaleDateString() : 'Invalid Date'}
@@ -588,7 +589,7 @@ export default function Backtest() {
                           </CardTitle>
                           <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
                             <span data-testid={`text-session-pair-${index}`}>
-                              Pair: {session.pair}
+                              Pair: {formatTradingPair(session.pair)}
                             </span>
                             <span data-testid={`text-session-balance-${index}`}>
                               Balance: ${currentBalance.toLocaleString()}
