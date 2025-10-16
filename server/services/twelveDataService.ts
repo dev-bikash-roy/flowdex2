@@ -166,27 +166,28 @@ export async function getPriceMulti(symbols: string[]): Promise<any> {
  */
 export function getSupportedInstruments() {
   return {
-    // Forex pairs
-    'EURUSD': { symbol: 'EURUSD', type: 'forex', exchange: 'FX' },
-    'GBPUSD': { symbol: 'GBPUSD', type: 'forex', exchange: 'FX' },
-    'USDJPY': { symbol: 'USDJPY', type: 'forex', exchange: 'FX' },
-    'USDCHF': { symbol: 'USDCHF', type: 'forex', exchange: 'FX' },
-    'AUDUSD': { symbol: 'AUDUSD', type: 'forex', exchange: 'FX' },
-    'USDCAD': { symbol: 'USDCAD', type: 'forex', exchange: 'FX' },
-    'NZDUSD': { symbol: 'NZDUSD', type: 'forex', exchange: 'FX' },
-    'EURGBP': { symbol: 'EURGBP', type: 'forex', exchange: 'FX' },
-    'EURJPY': { symbol: 'EURJPY', type: 'forex', exchange: 'FX' },
-    'GBPJPY': { symbol: 'GBPJPY', type: 'forex', exchange: 'FX' },
+    // Forex pairs (with slash format for Twelve Data)
+    'EUR/USD': { symbol: 'EUR/USD', type: 'forex', exchange: 'FX' },
+    'GBP/USD': { symbol: 'GBP/USD', type: 'forex', exchange: 'FX' },
+    'USD/JPY': { symbol: 'USD/JPY', type: 'forex', exchange: 'FX' },
+    'USD/CHF': { symbol: 'USD/CHF', type: 'forex', exchange: 'FX' },
+    'AUD/USD': { symbol: 'AUD/USD', type: 'forex', exchange: 'FX' },
+    'USD/CAD': { symbol: 'USD/CAD', type: 'forex', exchange: 'FX' },
+    'NZD/USD': { symbol: 'NZD/USD', type: 'forex', exchange: 'FX' },
+    'EUR/GBP': { symbol: 'EUR/GBP', type: 'forex', exchange: 'FX' },
+    'EUR/JPY': { symbol: 'EUR/JPY', type: 'forex', exchange: 'FX' },
+    'GBP/JPY': { symbol: 'GBP/JPY', type: 'forex', exchange: 'FX' },
     
-    // Indices
-    'GER40': { symbol: 'GER40', type: 'index', exchange: 'XETR' },
-    'US30': { symbol: 'US30', type: 'index', exchange: 'CBOT' },
-    'NAS100': { symbol: 'NAS100', type: 'index', exchange: 'NASDAQ' },
-    'SPX500': { symbol: 'SPX500', type: 'index', exchange: 'CBOE' },
+    // Indices (using correct Twelve Data symbols)
+    'DAX': { symbol: 'DAX', type: 'index', exchange: 'XETR' },
     
     // Commodities
-    'XAUUSD': { symbol: 'XAUUSD', type: 'commodity', exchange: 'COMEX' },
-    'XAGUSD': { symbol: 'XAGUSD', type: 'commodity', exchange: 'COMEX' },
+    'XAU/USD': { symbol: 'XAU/USD', type: 'commodity', exchange: 'COMEX' },
+    'XAG/USD': { symbol: 'XAG/USD', type: 'commodity', exchange: 'COMEX' },
+    
+    // Crypto
+    'BTC/USD': { symbol: 'BTC/USD', type: 'crypto', exchange: 'Binance' },
+    'ETH/USD': { symbol: 'ETH/USD', type: 'crypto', exchange: 'Binance' },
   };
 }
 
