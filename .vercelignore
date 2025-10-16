@@ -1,6 +1,6 @@
 # Ignore files that might confuse Vercel's framework detection
-vite.config.ts
-vite.config.js
+# vite.config.ts - Needed for build
+# vite.config.js
 .replit
 replit.md
 
