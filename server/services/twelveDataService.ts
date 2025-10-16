@@ -160,3 +160,121 @@ export async function getPriceMulti(symbols: string[]): Promise<any> {
     throw error;
   }
 }
+
+/**
+ * Get supported instruments for the platform
+ */
+export function getSupportedInstruments() {
+  return {
+    // Forex pairs
+    'EURUSD': { symbol: 'EURUSD', type: 'forex', exchange: 'FX' },
+    'GBPUSD': { symbol: 'GBPUSD', type: 'forex', exchange: 'FX' },
+    'USDJPY': { symbol: 'USDJPY', type: 'forex', exchange: 'FX' },
+    'USDCHF': { symbol: 'USDCHF', type: 'forex', exchange: 'FX' },
+    'AUDUSD': { symbol: 'AUDUSD', type: 'forex', exchange: 'FX' },
+    'USDCAD': { symbol: 'USDCAD', type: 'forex', exchange: 'FX' },
+    'NZDUSD': { symbol: 'NZDUSD', type: 'forex', exchange: 'FX' },
+    'EURGBP': { symbol: 'EURGBP', type: 'forex', exchange: 'FX' },
+    'EURJPY': { symbol: 'EURJPY', type: 'forex', exchange: 'FX' },
+    'GBPJPY': { symbol: 'GBPJPY', type: 'forex', exchange: 'FX' },
+    
+    // Indices
+    'GER40': { symbol: 'GER40', type: 'index', exchange: 'XETR' },
+    'US30': { symbol: 'US30', type: 'index', exchange: 'CBOT' },
+    'NAS100': { symbol: 'NAS100', type: 'index', exchange: 'NASDAQ' },
+    'SPX500': { symbol: 'SPX500', type: 'index', exchange: 'CBOE' },
+    
+    // Commodities
+    'XAUUSD': { symbol: 'XAUUSD', type: 'commodity', exchange: 'COMEX' },
+    'XAGUSD': { symbol: 'XAGUSD', type: 'commodity', exchange: 'COMEX' },
+  };
+}
+
+/**
+ * Format candles data for chart display
+ */
+export function formatCandlesForChart(data: TimeSeriesResponse) {
+  if (!data.values || data.status === 'error') {
+    return [];
+  }
+
+  return data.values.map(candle => ({
+    time: new Date(candle.datetime).getTime() / 1000, // Convert to timestamp
+    open: parseFloat(candle.open),
+    high: parseFloat(candle.high),
+    low: parseFloat(candle.low),
+    close: parseFloat(candle.close),
+    volume: parseFloat(candle.volume || '0')
+  }));
+}
+
+/**
+ * Get quote data for a symbol
+ */
+export async function getQuote(symbol: string) {
+  const client = initializeTwelveData();
+  if (!client) {
+    throw new Error('TwelveData service is not available - API key not provided or client failed to initialize');
+  }
+
+  try {
+    console.log(`Fetching quote for ${symbol}`);
+    const response = await client.quote({
+      symbol: symbol,
+      format: 'JSON'
+    });
+    
+    console.log('TwelveData quote response received');
+    return response;
+  } catch (error) {
+    console.error('Error fetching quote data:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get historical data specifically for backtesting
+ */
+export async function getHistoricalDataForBacktest(
+  symbol: string,
+  interval: string,
+  startDate: string,
+  endDate: string
+) {
+  const client = initializeTwelveData();
+  if (!client) {
+    throw new Error('TwelveData service is not available - API key not provided or client failed to initialize');
+  }
+
+  try {
+    console.log(`Fetching backtest data for ${symbol} from ${startDate} to ${endDate}`);
+    
+    const response = await client.timeSeries({
+      symbol: symbol,
+      interval: interval,
+      start_date: startDate,
+      end_date: endDate,
+      format: 'JSON'
+    });
+
+    if (response.status === 'error') {
+      throw new Error(response.message || 'Error fetching historical data');
+    }
+
+    return formatCandlesForChart(response);
+  } catch (error) {
+    console.error('Error fetching historical data for backtest:', error);
+    throw error;
+  }
+}
+
+// Create a service object to export
+export const twelveDataService = {
+  getTimeSeries,
+  getPrice,
+  getPriceMulti,
+  getSupportedInstruments,
+  formatCandlesForChart,
+  getQuote,
+  getHistoricalDataForBacktest
+};

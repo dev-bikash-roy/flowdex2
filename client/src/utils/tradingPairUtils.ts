@@ -26,6 +26,7 @@ export const tradingPairs: TradingPairInfo[] = [
   { value: "US30", label: "US30", description: "Dow Jones Industrial Average" },
   { value: "NAS100", label: "NAS100", description: "NASDAQ 100 Index" },
   { value: "SPX500", label: "SPX500", description: "S&P 500 Index" },
+  { value: "GER40", label: "GER40", description: "DAX 40 Index (Germany)" },
 ];
 
 /**
