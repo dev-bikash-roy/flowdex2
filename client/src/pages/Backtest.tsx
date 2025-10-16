@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CreateSessionModal from "@/components/CreateSessionModal";
 import TradingViewChart from "@/components/charts/TradingViewChart";
+import BacktestEngine from "@/components/BacktestEngine";
 
 import { Play, Pause, RotateCcw, Plus, BarChart3 } from "lucide-react";
 import { useParams, useLocation } from "wouter";
@@ -79,6 +80,7 @@ export default function Backtest() {
   const [, setLocation] = useLocation();
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<TradingSession | null>(null);
+  const [backtestMode, setBacktestMode] = useState(false);
   const [chartData, setChartData] = useState<any[]>([]);
   const [timeframe, setTimeframe] = useState("1h");
   const [isLoadingChart, setIsLoadingChart] = useState(false);
@@ -409,11 +411,34 @@ export default function Backtest() {
                   >
                     Fullscreen Chart
                   </Button>
+                  
+                  <Button
+                    onClick={() => setBacktestMode(!backtestMode)}
+                    className={backtestMode 
+                      ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700" 
+                      : "bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+                    }
+                  >
+                    {backtestMode ? 'Chart View' : 'Backtest Mode'}
+                  </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              {isLoadingChart ? (
+              {backtestMode ? (
+                <BacktestEngine
+                  symbol={selectedSession.pair}
+                  startingBalance={getSessionBalance(selectedSession, 'starting')}
+                  onBalanceChange={(balance) => {
+                    // Update session balance in real-time during backtest
+                    console.log('Balance updated:', balance);
+                  }}
+                  onTradeExecuted={(trade) => {
+                    console.log('Trade executed:', trade);
+                    // Here you could save the trade to the database
+                  }}
+                />
+              ) : isLoadingChart ? (
                 <div className="h-96 flex items-center justify-center">
                   <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
                 </div>
