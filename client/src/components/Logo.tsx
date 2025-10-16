@@ -56,6 +56,13 @@ export function Logo({ size = 'md', variant = 'default', showText = true, classN
             alt="FlowdeX Logo"
             className={`${sizeClass} object-contain`}
             style={{ filter: variant === 'white' ? 'brightness(0) invert(1)' : 'none' }}
+            onError={(e) => {
+              // Fallback to PNG if WebP fails
+              const target = e.target as HTMLImageElement;
+              if (target.src.includes('.webp')) {
+                target.src = '/logo/flowdex-logo.png';
+              }
+            }}
           />
         </div>
         {variant === 'gradient' && (
