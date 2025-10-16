@@ -1,7 +1,15 @@
 {
   "version": 2,
-  "buildCommand": "npm install && npx vite build",
-  "outputDirectory": "dist/public",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "buildCommand": "npm run vercel-build",
+        "outputDirectory": "dist/public"
+      }
+    }
+  ],
   "routes": [
     {
       "src": "/(.*)",
