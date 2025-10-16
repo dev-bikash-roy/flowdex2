@@ -47,25 +47,33 @@ function TradingViewWidget({
   onSymbolChange
 }: TradingViewWidgetProps) {
   const container = useRef<HTMLDivElement>(null);
+  
+  // Import and use the symbol mapping utility
+  const getTradingViewSymbol = (inputSymbol: string): string => {
+    // Import dynamically to avoid SSR issues
+    try {
+      const { getTradingViewSymbol: getSymbol } = require('@/utils/tradingPairUtils');
+      return getSymbol(inputSymbol);
+    } catch (error) {
+      console.warn('Could not load symbol mapping, using fallback');
+      // Fallback mapping for common symbols
+      const fallbackMap: Record<string, string> = {
+        'EURUSD': 'FX:EURUSD',
+        'GBPUSD': 'FX:GBPUSD',
+        'USDJPY': 'FX:USDJPY',
+        'XAUUSD': 'TVC:GOLD',
+        'XAGUSD': 'TVC:SILVER',
+        'GER40': 'TVC:DAX',
+        'BTCUSD': 'BINANCE:BTCUSDT',
+        'ETHUSD': 'BINANCE:ETHUSDT'
+      };
+      return fallbackMap[inputSymbol] || inputSymbol;
+    }
+  };
 
   // Convert our symbol format to TradingView format
   const convertSymbolToTradingView = (inputSymbol: string): string => {
-    const symbolMap: Record<string, string> = {
-      'EURUSD': 'FX:EURUSD',
-      'GBPUSD': 'FX:GBPUSD', 
-      'USDJPY': 'FX:USDJPY',
-      'USDCHF': 'FX:USDCHF',
-      'AUDUSD': 'FX:AUDUSD',
-      'USDCAD': 'FX:USDCAD',
-      'NZDUSD': 'FX:NZDUSD',
-      'EURGBP': 'FX:EURGBP',
-      'EURJPY': 'FX:EURJPY',
-      'GBPJPY': 'FX:GBPJPY',
-      'GER40': 'XETR:DAX',
-      'DAX': 'XETR:DAX'
-    };
-
-    return symbolMap[inputSymbol] || `FX:${inputSymbol}`;
+    return getTradingViewSymbol(inputSymbol);
   };
 
   // Convert interval to TradingView format

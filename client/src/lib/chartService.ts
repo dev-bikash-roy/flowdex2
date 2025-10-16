@@ -101,13 +101,18 @@ export async function fetchChartData(
   limit: number = 100
 ): Promise<ChartDataResponse> {
   try {
-    console.log(`Fetching chart data for ${symbol} with interval ${interval}`);
+    // Import the symbol mapping utility
+    const { getTwelveDataSymbol } = await import('@/utils/tradingPairUtils');
+    
+    // Convert to Twelve Data format for API call
+    const twelveDataSymbol = getTwelveDataSymbol(symbol);
+    console.log(`Fetching chart data for ${symbol} (Twelve Data: ${twelveDataSymbol}) with interval ${interval}`);
     
     // Get the session token from Supabase
     const { data: { session } } = await supabase.auth.getSession();
     
-    // Try to fetch from the backend API first
-    const response = await fetch(`/api/chart-data?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(interval)}&limit=${limit}`, {
+    // Try to fetch from the backend API first using Twelve Data symbol format
+    const response = await fetch(`/api/chart-data?symbol=${encodeURIComponent(twelveDataSymbol)}&interval=${encodeURIComponent(interval)}&limit=${limit}`, {
       headers: {
         'Authorization': session?.access_token ? `Bearer ${session.access_token}` : '',
         'Content-Type': 'application/json'
