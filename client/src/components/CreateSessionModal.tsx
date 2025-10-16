@@ -74,6 +74,55 @@ export default function CreateSessionModal({ open, onOpenChange, onSessionCreate
         });
         return;
       }
+
+      // Check if user exists in our users table, if not create them
+      try {
+        const { data: existingUser, error: userCheckError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+
+        if (userCheckError && userCheckError.code === 'PGRST116') {
+          // User doesn't exist in our users table, create them
+          console.log('User not found in users table, creating...');
+          const { error: userCreateError } = await supabase
+            .from('users')
+            .insert({
+              id: user.id,
+              email: user.email || '',
+              first_name: user.user_metadata?.first_name || '',
+              last_name: user.user_metadata?.last_name || ''
+            });
+
+          if (userCreateError) {
+            console.error('Error creating user:', userCreateError);
+            toast({
+              title: "User Setup Error",
+              description: "Failed to set up user account. Please try again.",
+              variant: "destructive",
+            });
+            return;
+          }
+          console.log('User created successfully');
+        } else if (userCheckError) {
+          console.error('Error checking user:', userCheckError);
+          toast({
+            title: "Database Error",
+            description: "Failed to verify user account. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('Error in user check/create:', error);
+        toast({
+          title: "Database Error",
+          description: "Failed to verify user account. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
       
       // Create session in Supabase with proper snake_case field names
       const startingBalanceNum = parseFloat(formData.startingBalance);

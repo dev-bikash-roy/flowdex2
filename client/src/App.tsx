@@ -193,9 +193,23 @@ function Router() {
           
           {/* Fullscreen chart route without layout */}
           <Route path="/fullscreen-chart/:id" component={FullscreenChart} />
+          
+          {/* Catch-all route for authenticated users - redirect to dashboard */}
+          <Route path="*" component={() => {
+            window.location.href = '/';
+            return null;
+          }} />
         </>
       )}
-      <Route component={NotFound} />
+      
+      {/* Catch-all route for unauthenticated users - redirect to landing */}
+      <Route path="*" component={() => {
+        if (!isAuthenticated) {
+          window.location.href = '/';
+          return null;
+        }
+        return <NotFound />;
+      }} />
     </Switch>
   );
 }
